@@ -89,6 +89,11 @@ describe("refs links and backlinks", () => {
     const mermaid = refs("graph", "docs/tokens.md", "--format", "mermaid").stdout;
     assert.match(mermaid, /^graph LR$/mu);
     assert.doesNotMatch(mermaid, /pool\.go/u);
+    const xml = refs("graph", "--format", "drawio").stdout;
+    assert.match(xml, /^<mxfile host="refs">/u);
+    assert.equal(xml.match(/vertex="1"/gu)?.length, 4);
+    assert.equal(xml.match(/edge="1"/gu)?.length, 4);
+    assert.match(xml, /dashed=1;strokeColor=#b85450;" edge="1"/u);
   });
 });
 

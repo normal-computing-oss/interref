@@ -15,6 +15,7 @@ import {
   type ContextOptions,
   type JsonValue,
 } from "./format.js";
+import { drawio } from "./drawio.js";
 
 const USAGE = `Usage: refs <command> [options]
 
@@ -22,14 +23,14 @@ Commands:
   links <file> [--to <file>]   Refs written in a file, optionally only those that reach <file>
   backlinks <file>             Refs in the repo that point at a file or directory
   check [<path>...]            Report broken refs in the repo or under the paths; exit 1 if any
-  graph [<file>]               Export the link graph, whole repo or around one file
+  graph [<file>]               Export the link graph, whole repo or around one file (> x.drawio)
 
 Options:
   -r, --recursive              Follow refs transitively (links, backlinks)
       --depth N                Stop after N hops (recursive walks; graph around a file: default 1)
   -C N, -A N, -B N             Show N lines of context around each ref where it is written
   -T N, --show-target N        Show N lines of the target, from the heading or the top
-      --format F               text | json | ndjson, plus sarif for check, dot | mermaid | json for graph
+      --format F               text | json | ndjson, plus sarif for check; dot | mermaid | json | drawio for graph
   -h, --help                   Show this help
 
 Paths in output are relative to the repo root. Exit codes: 0 clean, 1 broken refs, 2 usage error.
@@ -218,7 +219,7 @@ function quote(text: string): string {
 }
 
 function commandGraph(repo: Repo, values: Values, positionals: readonly string[]): number {
-  const outputFormat = format(values.format, ["dot", "mermaid", "json"] as const);
+  const outputFormat = format(values.format, ["dot", "mermaid", "json", "drawio"] as const);
   if (positionals.length > 1) throw new UsageError("graph takes at most one file");
   const graph = new RefGraph(scanRepo(repo).records);
   const center = positionals[0] === undefined ? undefined : repoPath(repo, positionals[0]);
@@ -271,6 +272,9 @@ function commandGraph(repo: Repo, values: Values, positionals: readonly string[]
         2,
       ),
     );
+  } else if (outputFormat === "drawio") {
+    const drawioNodes = names.map((path) => ({ path, kind: kinds.get(path) ?? "file", label: label(path) }));
+    console.log(drawio(drawioNodes, [...edges.values()], center));
   } else if (outputFormat === "dot") {
     console.log("digraph refs {\n  rankdir=LR;\n  node [shape=box];");
     for (const path of names) console.log(`  ${quote(path)} [label=${quote(label(path))}];`);

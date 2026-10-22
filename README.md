@@ -82,7 +82,7 @@ npm link -w cli
 | `refs check [<path>...]`          | Broken refs in the repo, or under the paths. Exit 1 if any.        |
 | `refs links <file> [--to <file>]` | Refs that a file holds and where each one goes.                    |
 | `refs backlinks <file>`           | Refs in the repo that point at a file or directory.                |
-| `refs graph [<file>]`             | The link graph: `--format dot` (default), `mermaid` or `json`.     |
+| `refs graph [<file>]`             | The link graph: `--format dot` (default), `mermaid`, `json` or `drawio`. |
 
 | Option                    | Effect                                                                  |
 | ------------------------- | ----------------------------------------------------------------------- |
@@ -93,6 +93,12 @@ npm link -w cli
 | `--format F`              | `text`, `json`, `ndjson`; `check` also has `sarif`.                     |
 
 Exit codes: 0 clean, 1 broken refs, 2 usage, git or `refs.toml` error.
+
+`refs graph --format drawio > refs.drawio` writes a file that draw.io (or the Draw.io Integration
+extension in VS Code) opens. The tool places the nodes itself, from left to right: a file is one
+column after the files that link to it. Files are blue boxes and directories are yellow folders.
+A red dashed arrow is a broken ref, and a number on an arrow counts the refs it stands for. With
+`refs graph <file>`, that file has a thick border.
 
 ```console
 $ refs check
