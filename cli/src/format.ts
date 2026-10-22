@@ -1,14 +1,8 @@
 /** Text, JSON and SARIF renderings of ref records. */
 
-import { LineIndex, RULE_SEVERITY, type RefRecord, type Repo, type RuleId } from "@nref/core";
+import { displayPath, LineIndex, RULE_SEVERITY, type RefRecord, type Repo, type RuleId } from "@nref/core";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
-
-/** A repo path as printed: the root is `.` and directories end in `/`. */
-export function displayPath(path: string, kind: "file" | "directory" = "file"): string {
-  if (path === "") return ".";
-  return kind === "directory" ? `${path}/` : path;
-}
 
 export function location(record: RefRecord): string {
   return `${record.source.path}:${record.source.line}:${record.source.col}`;

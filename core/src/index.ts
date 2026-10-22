@@ -2,7 +2,10 @@ export { checkRef, checkText, editDistance, scanRepo, similarPaths } from "./che
 export type { RefRecord, RepoScan, ResolvedTarget, Status } from "./check.js";
 export { CONFIG_FILE, ConfigError, DEFAULT_CONFIG, excluder, globToRegExp, parseConfig } from "./config.js";
 export type { Config, RuleSetting } from "./config.js";
-export { RefGraph } from "./graph.js";
+export { graphView, RefGraph } from "./graph.js";
+export type { GraphEdge, GraphNode, GraphView } from "./graph.js";
+export { displayPath, toDot, toDrawio, toMermaid } from "./render.js";
+export type { DrawioOptions } from "./render.js";
 export { extractHeadings, isMarkdownPath, renderHeadingText, Slugger, slugify } from "./markdown.js";
 export type { Heading } from "./markdown.js";
 export { findRepoRoot, GitError, readTextFromDisk, Repo } from "./repo.js";

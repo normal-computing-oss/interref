@@ -29,10 +29,15 @@ export class Repos implements vscode.Disposable {
 
   constructor(private readonly log: vscode.OutputChannel) {}
 
-  /** The repo that holds `uri` and the repo path of `uri`, or undefined outside git. */
+  /** The repo that holds `uri` (a file or folder) and its repo path, or undefined outside git. */
   async locate(uri: vscode.Uri): Promise<Located | undefined> {
     if (uri.scheme !== "file") return undefined;
-    const directory = dirname(uri.fsPath);
+    let directory = dirname(uri.fsPath);
+    try {
+      if ((await vscode.workspace.fs.stat(uri)).type & vscode.FileType.Directory) directory = uri.fsPath;
+    } catch {
+      // A path that does not exist (yet) is looked up through its parent.
+    }
     let root = this.roots.get(directory);
     if (root === undefined) {
       root = findRepoRoot(directory).catch(() => undefined);

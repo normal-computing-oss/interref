@@ -24,6 +24,12 @@
         "category": "nref"
       },
       {
+        "command": "nref.showGraph",
+        "title": "Show ref graph",
+        "category": "nref",
+        "icon": "$(type-hierarchy)"
+      },
+      {
         "command": "nref.refresh",
         "title": "Refresh file index",
         "category": "nref"
@@ -40,12 +46,21 @@
           "command": "nref.copyRef",
           "when": "resourceScheme == file",
           "group": "9_cutcopypaste@9"
+        },
+        {
+          "command": "nref.showGraph",
+          "when": "resourceScheme == file",
+          "group": "9_cutcopypaste@10"
         }
       ],
       "explorer/context": [
         {
           "command": "nref.copyRef",
           "group": "6_copypath@9"
+        },
+        {
+          "command": "nref.showGraph",
+          "group": "6_copypath@10"
         }
       ],
       "commandPalette": [
@@ -68,6 +83,19 @@
           "default": 10,
           "minimum": 0,
           "description": "Lines of the target to show when you hover over a ref."
+        },
+        "nref.graph.viewer": {
+          "type": "string",
+          "enum": [
+            "drawio",
+            "mermaid"
+          ],
+          "enumDescriptions": [
+            "Open the graph in the Draw.io Integration extension (hediet.vscode-drawio).",
+            "Open the graph in the official Mermaid extension (MermaidChart.vscode-mermaid-chart), or else in Mermaid Preview (vstirbu.vscode-mermaid-preview)."
+          ],
+          "default": "drawio",
+          "description": "The extension that shows \"nref: Show ref graph\". It must be installed; the command offers to install it."
         }
       }
     }

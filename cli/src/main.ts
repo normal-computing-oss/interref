@@ -3,11 +3,21 @@
 
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
-import { ConfigError, GitError, RefGraph, Repo, scanRepo, type RefRecord } from "@nref/core";
+import {
+  ConfigError,
+  GitError,
+  graphView,
+  RefGraph,
+  Repo,
+  scanRepo,
+  toDot,
+  toDrawio,
+  toMermaid,
+  type RefRecord,
+} from "@nref/core";
 import {
   contextBlock,
   describeTarget,
-  displayPath,
   location,
   printJson,
   recordJson,
@@ -15,7 +25,6 @@ import {
   type ContextOptions,
   type JsonValue,
 } from "./format.js";
-import { drawio } from "./drawio.js";
 
 const USAGE = `Usage: refs <command> [options]
 
@@ -214,82 +223,21 @@ function commandCheck(repo: Repo, values: Values, positionals: readonly string[]
   return errors > 0 ? 1 : 0;
 }
 
-function quote(text: string): string {
-  return `"${text.replace(/\\/gu, "\\\\").replace(/"/gu, '\\"')}"`;
-}
-
 function commandGraph(repo: Repo, values: Values, positionals: readonly string[]): number {
   const outputFormat = format(values.format, ["dot", "mermaid", "json", "drawio"] as const);
   if (positionals.length > 1) throw new UsageError("graph takes at most one file");
-  const graph = new RefGraph(scanRepo(repo).records);
   const center = positionals[0] === undefined ? undefined : repoPath(repo, positionals[0]);
-
-  let nodes: Set<string> | undefined;
-  if (center !== undefined) {
-    const depth = count(values.depth, "--depth", 1);
-    nodes = new Set([center]);
-    let frontier = [center];
-    for (let hop = 0; hop < depth && frontier.length > 0; hop++) {
-      const next: string[] = [];
-      for (const path of frontier) {
-        for (const neighbour of [...graph.neighbours(path), ...graph.neighbours(path, true)]) {
-          if (!nodes.has(neighbour)) {
-            nodes.add(neighbour);
-            next.push(neighbour);
-          }
-        }
-      }
-      frontier = next;
-    }
-  }
-
-  const edges = new Map<string, { from: string; to: string; count: number; broken: boolean }>();
-  const kinds = new Map<string, "file" | "directory">();
-  for (const record of graph.records) {
-    const target = record.target;
-    if (target === undefined || target.path === record.source.path) continue;
-    if (nodes !== undefined && !(nodes.has(record.source.path) && nodes.has(target.path))) continue;
-    kinds.set(record.source.path, "file");
-    kinds.set(target.path, target.kind);
-    const key = `${record.source.path}\0${target.path}`;
-    const edge = edges.get(key) ?? { from: record.source.path, to: target.path, count: 0, broken: false };
-    edge.count++;
-    edge.broken ||= record.status === "error";
-    edges.set(key, edge);
-  }
-  if (center !== undefined && !kinds.has(center)) kinds.set(center, repo.kind(center) ?? "file");
-
-  const names = [...kinds.keys()].sort();
-  const label = (path: string): string => displayPath(path, kinds.get(path));
+  const view = graphView(new RefGraph(scanRepo(repo).records), {
+    center,
+    depth: count(values.depth, "--depth", 1),
+    centerKind: center === undefined ? "file" : (repo.kind(center) ?? "file"),
+  });
   if (outputFormat === "json") {
-    console.log(
-      JSON.stringify(
-        {
-          nodes: names.map((path) => ({ path, kind: kinds.get(path) ?? "file" })),
-          edges: [...edges.values()].map(({ from, to, count: refs, broken }) => ({ from, to, refs, broken })),
-        },
-        null,
-        2,
-      ),
-    );
-  } else if (outputFormat === "drawio") {
-    const drawioNodes = names.map((path) => ({ path, kind: kinds.get(path) ?? "file", label: label(path) }));
-    console.log(drawio(drawioNodes, [...edges.values()], center));
-  } else if (outputFormat === "dot") {
-    console.log("digraph refs {\n  rankdir=LR;\n  node [shape=box];");
-    for (const path of names) console.log(`  ${quote(path)} [label=${quote(label(path))}];`);
-    for (const edge of edges.values()) {
-      console.log(`  ${quote(edge.from)} -> ${quote(edge.to)}${edge.broken ? " [color=red, style=dashed]" : ""};`);
-    }
-    console.log("}");
-  } else {
-    const ids = new Map(names.map((path, index) => [path, `n${index}`]));
-    console.log("graph LR");
-    for (const path of names) console.log(`  ${ids.get(path) ?? ""}["${label(path).replace(/"/gu, "#quot;")}"]`);
-    for (const edge of edges.values()) {
-      console.log(`  ${ids.get(edge.from) ?? ""} ${edge.broken ? "-.->" : "-->"} ${ids.get(edge.to) ?? ""}`);
-    }
-  }
+    const edges = view.edges.map(({ from, to, count: refs, broken }) => ({ from, to, refs, broken }));
+    console.log(JSON.stringify({ nodes: view.nodes.map(({ path, kind }) => ({ path, kind })), edges }, null, 2));
+  } else if (outputFormat === "drawio") console.log(toDrawio(view));
+  else if (outputFormat === "dot") console.log(toDot(view));
+  else console.log(toMermaid(view));
   return 0;
 }
 

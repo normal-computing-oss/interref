@@ -4,6 +4,7 @@ import { basename } from "node:path";
 import { CONFIG_FILE, extractHeadings, formatRef, isMarkdownPath } from "@nref/core";
 import * as vscode from "vscode";
 import { Completion, Diagnostics, HoverProvider, LinkProvider, QuickFixes, REVEAL_DIRECTORY } from "./features.js";
+import { showGraph } from "./graph.js";
 import { Repos } from "./repos.js";
 
 const ALL_FILES: vscode.DocumentSelector = { scheme: "file" };
@@ -28,6 +29,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("nref.copyRef", (uri: unknown) => copyRef(repos, uri)),
+    vscode.commands.registerCommand("nref.showGraph", (uri: unknown) => showGraph(context, repos, uri)),
     vscode.commands.registerCommand("nref.refresh", () => repos.refresh()),
     vscode.commands.registerCommand(REVEAL_DIRECTORY, async (path: unknown) => {
       if (typeof path !== "string") return;

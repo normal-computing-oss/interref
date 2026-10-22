@@ -7,6 +7,11 @@ This extension makes `nref:` refs in comments clickable, and it shows broken ref
 - Broken refs show in Problems. Cmd/Ctrl+. offers fixes.
 - "Copy ref" in the editor or explorer context menu copies `nref:/path#heading`.
 - Type `nref:/`, `nref:./` or `#` to get completions for paths and headings.
+- "nref: Show ref graph" opens the link graph around a file, or for the whole repo. You must
+  install a viewer extension first: Draw.io Integration (`hediet.vscode-drawio`, the default), or
+  for Mermaid the official Mermaid extension (`MermaidChart.vscode-mermaid-chart`) or Mermaid
+  Preview (`vstirbu.vscode-mermaid-preview`). If the viewer is missing, the command offers to
+  install it.
 
 Only heading fragments are supported for now. For the full syntax and the `refs` CLI, see
 `tools/nref/README.md` in the repo.
@@ -15,3 +20,4 @@ Only heading fragments are supported for now. For the full syntax and the `refs`
 
 - `nref.diagnostics.enabled` (default `true`): show broken refs as problems.
 - `nref.hover.lines` (default `10`): lines of the target in the hover.
+- `nref.graph.viewer` (default `drawio`): `drawio` or `mermaid`, the extension that shows the graph.

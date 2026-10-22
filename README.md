@@ -155,6 +155,20 @@ To debug it, open `tools/nref` in VS Code and start "Run nref extension" (F5).
 | Quick fix      | Cmd/Ctrl+. on a broken ref offers the suggested refs.                                |
 | Copy ref       | Right-click in an editor or the explorer. Copies `nref:/path`, plus `#slug` of the heading above the cursor in Markdown. |
 | Completion     | Type `nref:/` or `nref:./` for paths, and `#` after a Markdown path for headings.    |
+| Graph          | "nref: Show ref graph" (command palette, editor or explorer context menu). Pick 1 or 2 hops around the file, or the whole repo. |
+
+### Graph preview
+
+"nref: Show ref graph" writes the graph to a file in the extension's storage folder and opens it
+in a viewer extension. The `nref.graph.viewer` setting selects the viewer. You must install that
+extension first. If it is missing, the command offers to install it.
+
+| `nref.graph.viewer` | Extension to install                                    | What you get                                                                   |
+| ------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `drawio` (default)  | Draw.io Integration (`hediet.vscode-drawio`)            | The same layout as `refs graph --format drawio`. Turn on "Code Link" in the status bar, then double-click a node to open its file. |
+| `mermaid`           | Mermaid, the official one (`MermaidChart.vscode-mermaid-chart`), or else Mermaid Preview (`vstirbu.vscode-mermaid-preview`) | A `.mmd` file and its preview. Mermaid lays out the graph itself. If both are installed, Mermaid is used. |
+
+Each run writes the file again, so edits that you make to a graph file are lost on the next run.
 
 The extension reads the file list from git. It reads it again when files are created or deleted,
 or when `.gitignore` or `refs.toml` changes. Run "nref: Refresh file index" after other changes,
@@ -167,3 +181,4 @@ for example after `git add`. Headings come from the editor text, so they include
 - `refs lsp`. Because the extension uses `core` directly, it does not need a language server.
   Add one only if another editor needs one.
 - Backlinks panel and rename safety in the extension.
+- The graph preview does not update by itself. Run the command again after you change refs.
