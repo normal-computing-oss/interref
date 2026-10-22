@@ -1,0 +1,13 @@
+export { checkRef, checkText, editDistance, scanRepo, similarPaths } from "./check.js";
+export type { RefRecord, RepoScan, ResolvedTarget, Status } from "./check.js";
+export { CONFIG_FILE, ConfigError, DEFAULT_CONFIG, excluder, globToRegExp, parseConfig } from "./config.js";
+export type { Config, RuleSetting } from "./config.js";
+export { RefGraph } from "./graph.js";
+export { extractHeadings, isMarkdownPath, renderHeadingText, Slugger, slugify } from "./markdown.js";
+export type { Heading } from "./markdown.js";
+export { findRepoRoot, GitError, readTextFromDisk, Repo } from "./repo.js";
+export type { EntryKind, TextReader } from "./repo.js";
+export { encodeRefPath, formatRef, parseFragment, resolveTarget, RULE_SEVERITY } from "./resolve.js";
+export type { HeadingFragment, PathStyle, Problem, Result, RuleId, Severity, Target } from "./resolve.js";
+export { LineIndex, scanRefs } from "./syntax.js";
+export type { RefMatch } from "./syntax.js";

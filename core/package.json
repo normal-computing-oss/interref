@@ -1,0 +1,14 @@
+{
+  "name": "@nref/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Scanner, resolver and checker shared by the refs CLI and the nref VS Code extension",
+  "type": "module",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  }
+}

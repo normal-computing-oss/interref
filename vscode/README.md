@@ -1,0 +1,17 @@
+# nref for VS Code
+
+This extension makes `nref:` refs in comments clickable, and it shows broken refs.
+
+- Cmd/Ctrl+click a ref to open its target. A heading fragment opens the file at that heading.
+- Hover over a ref to see the start of its target.
+- Broken refs show in Problems. Cmd/Ctrl+. offers fixes.
+- "Copy ref" in the editor or explorer context menu copies `nref:/path#heading`.
+- Type `nref:/`, `nref:./` or `#` to get completions for paths and headings.
+
+Only heading fragments are supported for now. For the full syntax and the `refs` CLI, see
+`tools/nref/README.md` in the repo.
+
+## Settings
+
+- `nref.diagnostics.enabled` (default `true`): show broken refs as problems.
+- `nref.hover.lines` (default `10`): lines of the target in the hover.

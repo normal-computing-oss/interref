@@ -1,0 +1,14 @@
+{
+  "name": "@nref/cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "refs: list, check and graph nref cross-file references",
+  "type": "module",
+  "bin": {
+    "refs": "./dist/src/main.js"
+  },
+  "dependencies": {
+    "@nref/cli": "file:",
+    "@nref/core": "0.1.0"
+  }
+}

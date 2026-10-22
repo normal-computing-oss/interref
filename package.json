@@ -1,0 +1,31 @@
+{
+  "name": "nref-tools",
+  "private": true,
+  "description": "CLI and VS Code extension for nref cross-file references in comments",
+  "type": "module",
+  "workspaces": [
+    "core",
+    "cli",
+    "vscode"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -b && npm run bundle -w vscode",
+    "lint": "eslint .",
+    "test": "npm run build && node --test \"core/dist/test/**/*.test.js\" \"cli/dist/test/**/*.test.js\"",
+    "check": "npm run lint && npm test",
+    "package": "npm run build && npm run package -w vscode",
+    "clean": "tsc -b --clean && rm -rf vscode/dist vscode/*.vsix"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.5",
+    "@types/vscode": "~1.100.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.13.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.0"
+  }
+}

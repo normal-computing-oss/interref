@@ -1,0 +1,83 @@
+{
+  "name": "nref",
+  "displayName": "nref",
+  "description": "Follow, preview and check nref cross-file references in comments",
+  "version": "0.1.0",
+  "publisher": "normal-computing",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "nref.copyRef",
+        "title": "Copy ref",
+        "category": "nref"
+      },
+      {
+        "command": "nref.refresh",
+        "title": "Refresh file index",
+        "category": "nref"
+      },
+      {
+        "command": "nref.revealDirectory",
+        "title": "Reveal directory",
+        "category": "nref"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "nref.copyRef",
+          "when": "resourceScheme == file",
+          "group": "9_cutcopypaste@9"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "nref.copyRef",
+          "group": "6_copypath@9"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "nref.revealDirectory",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "nref",
+      "properties": {
+        "nref.diagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Underline broken refs in open files."
+        },
+        "nref.hover.lines": {
+          "type": "number",
+          "default": 10,
+          "minimum": 0,
+          "description": "Lines of the target to show when you hover over a ref."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "bundle": "node esbuild.mjs",
+    "package": "vsce package --no-dependencies --skip-license --allow-missing-repository --out nref.vsix"
+  },
+  "devDependencies": {
+    "@nref/core": "0.1.0",
+    "@vscode/vsce": "^4.0.0"
+  }
+}
