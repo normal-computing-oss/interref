@@ -1,6 +1,6 @@
 {
   "name": "@interref/core",
-  "version": "0.2.0-beta.1",
+  "version": "0.2.0-beta.2",
   "private": true,
   "description": "Scanner, resolver and checker shared by the interref CLI and VS Code extension",
   "license": "Apache-2.0",
