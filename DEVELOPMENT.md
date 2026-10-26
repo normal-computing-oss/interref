@@ -26,7 +26,7 @@ pnpm install
 pnpm build           # tsrs for all packages, then esbuild bundles the CLI and the extension
 pnpm test            # build, then run the tests of all packages
 pnpm lint            # oxlint with type-aware rules; `any` is an error, written or inferred
-pnpm check           # lint, then test; CI runs this
+pnpm check           # lint, then test; CI runs this on pull requests and on main
 ```
 
 The type checker is [tsrs](https://github.com/oxc-project/tsrs), a Rust port of TypeScript 7. Use
@@ -66,42 +66,41 @@ feature or a setting, update it and the user README.
 
 ## Releasing
 
-The CLI and the extension always have the same version. To release, on an up-to-date `main`:
+You release from your machine. CI does not publish. The CLI and the extension always have the
+same version. On an up-to-date `main` with no changes, run:
 
 ```sh
-pnpm release 0.2.0          # sets the version in all packages, then commits and tags v0.2.0
-git push --follow-tags      # the tag starts .github/workflows/release.yml
+pnpm release 0.2.0 --dry-run   # do all the steps, publish nothing, then undo the commit and the tag
+pnpm release 0.2.0             # the real release
 ```
 
-The workflow does these steps:
+`scripts/release.mjs` does these steps. It stops at the first step that fails:
 
-1. It makes sure that the tag and the package versions are the same.
-2. It runs `pnpm check`.
-3. It publishes the CLI to npm. npm trusted publishing gives the authentication, so the repo has no
-   npm token.
-4. It makes a GitHub release with notes from the merged pull requests. It attaches the CLI tarball
+1. It makes sure that you are on `main`, that `main` is the same as `origin/main`, that the tag
+   does not exist, that npm does not have the version, and that you are logged in to npm and `gh`.
+2. It sets the version in all packages, then runs `pnpm check`.
+3. It packs the CLI and the extension into `release/`.
+4. It commits `Release v0.2.0` and makes the tag `v0.2.0`.
+5. It publishes the CLI to npm. npm can ask you to log in or to approve in the browser.
+6. It pushes `main` and the tag.
+7. It makes a GitHub release with notes from the merged pull requests. It attaches the CLI tarball
    and `interref-<version>.vsix`.
 
-A version with a `-` (for example `0.3.0-beta.1`) goes to the npm `next` dist-tag, and its GitHub
-release is a prerelease.
+If a step before the npm publish fails, the script undoes the commit and the tag, so you can fix
+the problem and run it again. If a step after the npm publish fails, the script shows the commands
+that are still to do. Do not publish the same version again.
 
-If the workflow fails before the npm publish, delete the tag (`git push --delete origin v0.2.0` and
-`git tag -d v0.2.0`), fix the problem, then release again. If it fails after the npm publish, do not
-publish the same version again. Make the GitHub release by hand, or release the next patch version.
+A version with a `-` goes to the npm dist-tag with the same word as its prerelease part
+(`0.3.0-beta.1` goes to `beta`), and its GitHub release is a prerelease. Other versions go to
+`latest`.
 
-### One-time npm setup
+### One-time setup
+
+- Log in to npm (`npm login`) with an account that can publish in the npm org `normal-computing`.
+- Log in to GitHub (`gh auth login`) with an account that can push to `main` and make releases.
 
 The package name has a scope because npm refuses the unscoped names `interref`, `inter-ref` and
 `iref`. They are too similar to the existing package `interpret`.
-
-npm accepts a trusted publisher only for a package that exists. Thus, the first publish is manual:
-
-1. Make the npm org `normal-computing` (npmjs.com/org/create). Public packages are free.
-2. Run `pnpm build`, then in `packages/cli`, run `pnpm pack` and
-   `npm publish ./normal-computing-interref-<version>.tgz --tag next`. You must be logged in to npm
-   (`npm login`).
-3. On npmjs.com, open the settings of `@normal-computing/interref` and add a trusted publisher:
-   GitHub Actions, repository `normal-computing-oss/interref`, workflow `release.yml`.
 
 ## Not done yet
 
