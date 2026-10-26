@@ -1,7 +1,7 @@
 {
   "name": "vscode-interref",
   "displayName": "interref",
-  "description": "Follow, preview, check and graph nref cross-file links in comments",
+  "description": "Follow, preview, check and graph iref: cross-file links in comments",
   "version": "0.1.0",
   "publisher": "normal-computing",
   "private": true,

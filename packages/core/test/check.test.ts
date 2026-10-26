@@ -14,10 +14,10 @@ describe("checkText", () => {
       {
         ".gitignore": "build/\n",
         "docs/auth.md": "# Auth\n\n## Token lifetime\n\nText.\n",
-        "docs/tokens.md": "<!-- Implemented in nref:../src/auth/session.ts -->\n",
-        "src/auth/session.ts": "// Token TTL must match nref:/docs/auth.md#token-lifetime\n",
+        "docs/tokens.md": "<!-- Implemented in iref:../src/auth/session.ts -->\n",
+        "src/auth/session.ts": "// Token TTL must match iref:/docs/auth.md#token-lifetime\n",
         "src/db/config.go": "package db\n",
-        "src/db/pool.go": "// nref:./config.go\n",
+        "src/db/pool.go": "// iref:./config.go\n",
         "src/Readme.md": "# Readme\n",
       },
       { "notes/draft.md": "# Draft\n", "build/out.txt": "x\n" },
@@ -34,7 +34,7 @@ describe("checkText", () => {
   };
 
   it("accepts files, directories and headings", () => {
-    const record = only("src/auth/session.ts", "x nref:/docs/auth.md#token-lifetime");
+    const record = only("src/auth/session.ts", "x iref:/docs/auth.md#token-lifetime");
     assert.equal(record.status, "ok");
     assert.deepEqual(record.target, {
       path: "docs/auth.md",
@@ -43,56 +43,64 @@ describe("checkText", () => {
       line: 3,
     });
     assert.deepEqual(record.source, { path: "src/auth/session.ts", line: 1, col: 3 });
-    assert.equal(only("docs/auth.md", "nref:../src/").target?.kind, "directory");
-    assert.equal(only("docs/auth.md", "nref:/").target?.path, "");
-    assert.equal(only("docs/auth.md", "nref:#auth").status, "ok");
+    assert.equal(only("docs/auth.md", "iref:../src/").target?.kind, "directory");
+    assert.equal(only("docs/auth.md", "iref:/").target?.path, "");
+    assert.equal(only("docs/auth.md", "iref:#auth").status, "ok");
   });
 
   it("reports missing files with suggestions in the same style", () => {
-    const record = only("src/db/pool.go", "nref:./confg.go");
+    const record = only("src/db/pool.go", "iref:./confg.go");
     assert.equal(record.rule, "missing-file");
-    assert.deepEqual(record.suggestions, ["nref:./config.go"]);
-    assert.deepEqual(only("docs/a.md", "nref:/lib/session.ts").suggestions, ["nref:/src/auth/session.ts"]);
+    assert.deepEqual(record.suggestions, ["iref:./config.go"]);
+    assert.deepEqual(only("docs/a.md", "iref:/lib/session.ts").suggestions, ["iref:/src/auth/session.ts"]);
   });
 
   it("reports bare paths, case mismatches and the reserved authority", () => {
-    const bare = only("src/db/pool.go", "nref:config.go#x");
+    const bare = only("src/db/pool.go", "iref:config.go#x");
     assert.equal(bare.rule, "bare-path");
-    assert.deepEqual(bare.suggestions, ["nref:./config.go#x"]);
-    const cased = only("docs/a.md", "nref:/src/readme.md");
+    assert.deepEqual(bare.suggestions, ["iref:./config.go#x"]);
+    const cased = only("docs/a.md", "iref:/src/readme.md");
     assert.equal(cased.rule, "case-mismatch");
-    assert.deepEqual(cased.suggestions, ["nref:/src/Readme.md"]);
-    assert.equal(only("docs/a.md", "nref://other/a.md").rule, "reserved-authority");
-    assert.equal(only("docs/a.md", "nref:../../x").rule, "escapes-root");
+    assert.deepEqual(cased.suggestions, ["iref:/src/Readme.md"]);
+    assert.equal(only("docs/a.md", "iref://other/a.md").rule, "reserved-authority");
+    assert.equal(only("docs/a.md", "iref:../../x").rule, "escapes-root");
+  });
+
+  it("keeps the protocol of the ref in messages and suggestions", () => {
+    const bare = only("src/db/pool.go", "sync:config.go");
+    assert.deepEqual(bare.suggestions, ["sync:./config.go"]);
+    assert.match(bare.message ?? "", /did you mean sync:\.\/config\.go\?/u);
+    assert.deepEqual(only("src/db/pool.go", "iref:./confg.go").suggestions, ["iref:./config.go"]);
+    assert.match(only("docs/a.md", "iref://other/a.md").message ?? "", /^iref:\/\/<repo>\//u);
   });
 
   it("checks heading fragments", () => {
-    const missing = only("docs/tokens.md", "nref:./auth.md#token-lifetimes");
+    const missing = only("docs/tokens.md", "iref:./auth.md#token-lifetimes");
     assert.equal(missing.rule, "missing-anchor");
-    assert.deepEqual(missing.suggestions, ["nref:./auth.md#token-lifetime"]);
+    assert.deepEqual(missing.suggestions, ["iref:./auth.md#token-lifetime"]);
     assert.equal(missing.target?.path, "docs/auth.md");
-    assert.deepEqual(only("docs/tokens.md", "nref:./auth.md#tok").suggestions, ["nref:./auth.md#token-lifetime"]);
-    assert.equal(only("docs/a.md", "nref:/src/db/pool.go#x").rule, "missing-anchor");
-    assert.equal(only("docs/a.md", "nref:/src/#x").rule, "missing-anchor");
+    assert.deepEqual(only("docs/tokens.md", "iref:./auth.md#tok").suggestions, ["iref:./auth.md#token-lifetime"]);
+    assert.equal(only("docs/a.md", "iref:/src/db/pool.go#x").rule, "missing-anchor");
+    assert.equal(only("docs/a.md", "iref:/src/#x").rule, "missing-anchor");
   });
 
   it("rejects line and anchor fragments for now", () => {
-    const line = only("docs/a.md", "nref:/src/db/pool.go#L3");
+    const line = only("docs/a.md", "iref:/src/db/pool.go#L3");
     assert.equal(line.rule, "unsupported-fragment");
-    assert.deepEqual(line.suggestions, ["nref:/src/db/pool.go"]);
-    assert.equal(only("docs/a.md", "nref:/src/db/pool.go#^name").rule, "unsupported-fragment");
+    assert.deepEqual(line.suggestions, ["iref:/src/db/pool.go"]);
+    assert.equal(only("docs/a.md", "iref:/src/db/pool.go#^name").rule, "unsupported-fragment");
   });
 
   it("warns about untracked and ignored targets", () => {
-    const untracked = only("docs/a.md", "nref:/notes/draft.md#draft");
+    const untracked = only("docs/a.md", "iref:/notes/draft.md#draft");
     assert.equal(untracked.status, "warn");
     assert.equal(untracked.rule, "target-ignored");
-    assert.equal(only("docs/a.md", "nref:/build/out.txt").rule, "target-ignored");
-    assert.equal(only("docs/a.md", "nref:/build/").status, "warn");
+    assert.equal(only("docs/a.md", "iref:/build/out.txt").rule, "target-ignored");
+    assert.equal(only("docs/a.md", "iref:/build/").status, "warn");
   });
 
   it("requires a directory after a trailing slash", () => {
-    assert.equal(only("docs/a.md", "nref:/docs/auth.md/").rule, "missing-file");
+    assert.equal(only("docs/a.md", "iref:/docs/auth.md/").rule, "missing-file");
   });
 });
 
@@ -102,10 +110,10 @@ describe("scanRepo and RefGraph", () => {
 
   before(async () => {
     fixture = makeRepo({
-      "a.md": "<!-- nref:./b.md nref:./c.md -->\n",
-      "b.md": "<!-- nref:./c.md nref:./a.md -->\n",
+      "a.md": "<!-- iref:./b.md iref:./c.md -->\n",
+      "b.md": "<!-- iref:./c.md iref:./a.md -->\n",
       "c.md": "# C\n",
-      "image.bin": "\0binary nref:./a.md",
+      "image.bin": "\0binary iref:./a.md",
     });
     repo = await Repo.open(fixture.root);
   });

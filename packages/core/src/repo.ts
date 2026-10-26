@@ -4,7 +4,7 @@ import { execFile } from "node:child_process";
 import { readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, sep } from "node:path";
 import { promisify } from "node:util";
-import { CONFIG_FILE, DEFAULT_CONFIG, excluder, parseConfig, type Config } from "./config.js";
+import { DEFAULT_CONFIG, excluder, loadConfig, type Config } from "./config.js";
 import { extractHeadings, isMarkdownPath, type Heading } from "./markdown.js";
 
 const run = promisify(execFile);
@@ -107,8 +107,8 @@ export class Repo {
   }
 
   /**
-   * Lists the files of the repo that contains `path`, with `git ls-files`, and reads `interref.toml`.
-   * Throws `ConfigError` when `interref.toml` is malformed.
+   * Lists the files of the repo that contains `path`, with `git ls-files`, and reads the config file.
+   * Throws `ConfigError` when the config file is malformed, or when there is more than one.
    */
   static async open(path: string, readText: TextReader = readTextFromDisk): Promise<Repo> {
     const root = await findRepoRoot(path);
@@ -116,12 +116,10 @@ export class Repo {
       git(root, ["ls-files", "-z", "--cached"]),
       git(root, ["ls-files", "-z", "--others", "--exclude-standard"]),
     ]);
-    const configText = readText(join(root, CONFIG_FILE));
-    const config = configText === undefined ? DEFAULT_CONFIG : parseConfig(configText);
-    return new Repo(root, splitNul(tracked), splitNul(untracked), readText, config);
+    return new Repo(root, splitNul(tracked), splitNul(untracked), readText, loadConfig(root, readText));
   }
 
-  /** Whether `interref.toml` excludes `path` from scanning. */
+  /** Whether the config excludes `path` from scanning. */
   isExcluded(path: string): boolean {
     return this.excluded(path);
   }

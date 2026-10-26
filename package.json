@@ -1,7 +1,7 @@
 {
   "name": "interref-workspace",
   "private": true,
-  "description": "interref: a CLI and a VS Code extension for nref cross-file links in comments",
+  "description": "interref: a CLI and a VS Code extension for iref: cross-file links in comments",
   "type": "module",
   "packageManager": "pnpm@12.11.2",
   "engines": {

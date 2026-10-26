@@ -1,6 +1,6 @@
 export { checkRef, checkText, editDistance, scanRepo, similarPaths } from "./check.js";
 export type { RefRecord, RepoScan, ResolvedTarget, Status } from "./check.js";
-export { CONFIG_FILE, ConfigError, DEFAULT_CONFIG, excluder, globToRegExp, parseConfig } from "./config.js";
+export { CONFIG_FILES, ConfigError, DEFAULT_CONFIG, excluder, globToRegExp, loadConfig, parseConfig } from "./config.js";
 export type { Config, RuleSetting } from "./config.js";
 export { graphView, RefGraph } from "./graph.js";
 export type { GraphEdge, GraphNode, GraphView } from "./graph.js";
@@ -12,5 +12,5 @@ export { findRepoRoot, GitError, readTextFromDisk, Repo } from "./repo.js";
 export type { EntryKind, TextReader } from "./repo.js";
 export { encodeRefPath, formatRef, parseFragment, resolveTarget, RULE_SEVERITY } from "./resolve.js";
 export type { HeadingFragment, PathStyle, Problem, Result, RuleId, Severity, Target } from "./resolve.js";
-export { LineIndex, scanRefs } from "./syntax.js";
+export { DEFAULT_PROTOCOLS, LineIndex, protocolPattern, scanRefs } from "./syntax.js";
 export type { RefMatch } from "./syntax.js";

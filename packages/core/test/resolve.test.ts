@@ -51,13 +51,14 @@ describe("parseFragment", () => {
 
 describe("formatRef", () => {
   it("writes each style", () => {
-    assert.equal(formatRef("docs/a.md", "src/b.ts", { style: "absolute" }), "nref:/src/b.ts");
-    assert.equal(formatRef("docs/a.md", "src/b.ts", { style: "relative" }), "nref:../src/b.ts");
-    assert.equal(formatRef("docs/a.md", "docs/c.md", { style: "relative", slug: "x" }), "nref:./c.md#x");
-    assert.equal(formatRef("docs/a.md", "docs/a.md", { style: "self", slug: "x" }), "nref:#x");
-    assert.equal(formatRef("docs/a.md", "docs", { style: "relative", directory: true }), "nref:./");
-    assert.equal(formatRef("docs/a.md", "", { style: "relative", directory: true }), "nref:../");
-    assert.equal(formatRef("a.md", "src", { style: "relative", directory: true }), "nref:./src/");
+    assert.equal(formatRef("docs/a.md", "src/b.ts", { style: "absolute" }), "iref:/src/b.ts");
+    assert.equal(formatRef("docs/a.md", "src/b.ts", { style: "relative" }), "iref:../src/b.ts");
+    assert.equal(formatRef("docs/a.md", "docs/c.md", { style: "relative", slug: "x" }), "iref:./c.md#x");
+    assert.equal(formatRef("docs/a.md", "docs/a.md", { style: "self", slug: "x" }), "iref:#x");
+    assert.equal(formatRef("docs/a.md", "docs", { style: "relative", directory: true }), "iref:./");
+    assert.equal(formatRef("docs/a.md", "", { style: "relative", directory: true }), "iref:../");
+    assert.equal(formatRef("a.md", "src", { style: "relative", directory: true }), "iref:./src/");
+    assert.equal(formatRef("docs/a.md", "src/b.ts", { style: "absolute", protocol: "sync" }), "sync:/src/b.ts");
   });
 
   it("encodes characters that would end the ref", () => {

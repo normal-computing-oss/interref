@@ -89,7 +89,7 @@ const RULE_TEXT: Readonly<Record<RuleId, string>> = {
   "missing-anchor": "Heading not found in the target",
   "escapes-root": "Path climbs above the repo root",
   "bare-path": "Path starts with neither /, ./ nor ../",
-  "reserved-authority": "nref://<repo>/ is reserved for cross-repo refs",
+  "reserved-authority": "<protocol>://<repo>/ is reserved for cross-repo refs",
   "case-mismatch": "Path differs from a repo path only by case",
   "unsupported-fragment": "Only heading fragments are supported",
   "invalid-encoding": "Bad percent-encoding",

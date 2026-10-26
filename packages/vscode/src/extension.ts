@@ -1,7 +1,7 @@
 /** Entry point: wires the providers, commands and file watchers. */
 
 import { basename } from "node:path";
-import { CONFIG_FILE, extractHeadings, formatRef, isMarkdownPath } from "@interref/core";
+import { CONFIG_FILES, extractHeadings, formatRef, isMarkdownPath } from "@interref/core";
 import * as vscode from "vscode";
 import { Completion, Diagnostics, HoverProvider, LinkProvider, QuickFixes, REVEAL_DIRECTORY } from "./features.js";
 import { showGraph } from "./graph.js";
@@ -10,7 +10,7 @@ import { Repos } from "./repos.js";
 const ALL_FILES: vscode.DocumentSelector = { scheme: "file" };
 
 /** Files whose change alters which paths exist, are tracked, or are scanned. */
-const INDEX_FILES = new Set([".gitignore", CONFIG_FILE]);
+const INDEX_FILES = new Set([".gitignore", ...CONFIG_FILES]);
 
 export function activate(context: vscode.ExtensionContext): void {
   const log = vscode.window.createOutputChannel("interref");
@@ -75,7 +75,10 @@ export function activate(context: vscode.ExtensionContext): void {
   diagnostics.scheduleAll(0);
 }
 
-/** Copies `nref:/path` for a file or folder, plus `#slug` of the heading above the cursor in Markdown. */
+/**
+ * Copies `iref:/path` for a file or folder, plus `#slug` of the heading above the cursor in Markdown.
+ * The protocol is the first one in the config.
+ */
 async function copyRef(repos: Repos, argument: unknown): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   const uri = argument instanceof vscode.Uri ? argument : editor?.document.uri;
@@ -99,7 +102,7 @@ async function copyRef(repos: Repos, argument: unknown): Promise<void> {
       .at(-1)?.slug;
   }
 
-  const ref = formatRef(path, path, { style: "absolute", directory, slug });
+  const ref = formatRef(path, path, { style: "absolute", directory, slug, protocol: repo.config.protocols[0] });
   await vscode.env.clipboard.writeText(ref);
   vscode.window.setStatusBarMessage(`Copied ${ref}`, 3000);
 }

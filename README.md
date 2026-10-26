@@ -1,15 +1,15 @@
 # interref
 
-interref makes `nref:` links checkable in CI and clickable in VS Code. You write an `nref:` link in
+interref makes `iref:` links checkable in CI and clickable in VS Code. You write an `iref:` link in
 a comment. It points from any file in a git repo to another file, directory or Markdown heading in
 the same repo. The design is in the "Proposal: Cross-File Reference System" doc (2026-10-19).
 
 ```python
-# Token TTL must match the docs: nref:/docs/auth.md#token-lifetime
+# Token TTL must match the docs: iref:/docs/auth.md#token-lifetime
 ```
 
 ```markdown
-<!-- Implemented in nref:../src/auth/session.ts -->
+<!-- Implemented in iref:../src/auth/session.ts -->
 ```
 
 | Folder             | Package            | Contents                                                                 |
@@ -45,22 +45,33 @@ In VS Code, install the extensions that the workspace recommends: "TypeScript (N
 ## Syntax
 
 ```text
-nref:/path/from/repo/root
-nref:./relative/to/this/file
-nref:../also/relative
-nref:/some/doc.md#heading-slug
-nref:#heading-in-this-file
+iref:/path/from/repo/root
+iref:./relative/to/this/file
+iref:../also/relative
+iref:/some/doc.md#heading-slug
+iref:#heading-in-this-file
 ```
 
 - A path starts with `/` (from the repo root), `./` or `../` (from the directory of the file that
-  holds the ref). A bare path such as `nref:config.go` is an error; the fix is `nref:./config.go`.
+  holds the ref). A bare path such as `iref:config.go` is an error; the fix is `iref:./config.go`.
 - A path can name a file or a directory. A trailing `/` means that the target must be a directory.
 - Paths are matched case-sensitively against `git ls-files`, so a ref that passes on macOS also
   passes on Linux CI.
 - Percent-encode spaces, `#` and `%` in paths (`%20`, `%23`, `%25`).
 - The ref ends at whitespace, a quote, a backtick or a bracket. A trailing `-->`, `*/` or
   `. , ; : ! ?` is not part of it.
-- Write `nref\:` to show the syntax in text without making a ref.
+- Write `iref\:` to show the syntax in text without making a ref.
+
+### Protocols
+
+The name before the `:` is the protocol. By default, `iref:` and `sync:` start a ref, and they
+work the same way. Use the name that tells the reader the most, for example `sync:` for
+two things that must change together. The `protocols` key of the [config file](#config-file) sets
+the list. A suggested fix keeps the protocol of the ref. "Copy ref" in VS Code uses the first
+protocol in the list.
+
+A protocol name must not have a letter, a digit, `_` or `-` immediately before it. Thus, if `ref` is
+in the list, `iref:` is not also read as `ref:`.
 
 ### Fragments
 
@@ -82,7 +93,11 @@ Run it from anywhere in the repo that you want to check:
 node ~/workspace/interref/packages/cli/dist/interref.mjs check
 # or put `interref` on your PATH (run this in the interref repo; ~/.local/bin must be on PATH):
 ln -s "$PWD/packages/cli/dist/interref.mjs" ~/.local/bin/interref
+# `iref` is a short name for the same tool:
+ln -s "$PWD/packages/cli/dist/interref.mjs" ~/.local/bin/iref
 ```
+
+The npm package installs both names, `interref` and `iref`.
 
 `pnpm build` writes the CLI and `@interref/core` into one file, `packages/cli/dist/interref.mjs`.
 That file is the whole npm package, so it has no dependencies at run time.
@@ -102,7 +117,7 @@ That file is the whole npm package, so it has no dependencies at run time.
 | `-T N`, `--show-target N` | Show N lines of the target, from the heading or from the top.           |
 | `--format F`              | `text`, `json`, `ndjson`; `check` also has `sarif`.                     |
 
-Exit codes: 0 clean, 1 broken refs, 2 usage, git or `interref.toml` error.
+Exit codes: 0 clean, 1 broken refs, 2 usage, git or config file error.
 
 `interref graph --format drawio > refs.drawio` writes a file that draw.io (or the Draw.io Integration
 extension in VS Code) opens. The tool places the nodes itself, from left to right: a file is one
@@ -112,7 +127,7 @@ A red dashed arrow is a broken ref, and a number on an arrow counts the refs it 
 
 ```console
 $ interref check
-src/auth/session.ts:3:5  error  nref:/docs/auth.md#tokn  no heading #tokn in docs/auth.md; did you mean #token? [missing-anchor]  (fix: nref:/docs/auth.md#token)
+src/auth/session.ts:3:5  error  iref:/docs/auth.md#tokn  no heading #tokn in docs/auth.md; did you mean #token? [missing-anchor]  (fix: iref:/docs/auth.md#token)
 1 broken ref (15 refs in 2160 files)
 ```
 
@@ -125,21 +140,36 @@ src/auth/session.ts:3:5  error  nref:/docs/auth.md#tokn  no heading #tokn in doc
 | `unsupported-fragment` | error   | The fragment is `#L…` or `#^…`.                                   |
 | `escapes-root`         | error   | `..` climbs above the repo root.                                  |
 | `bare-path`            | error   | The path starts with none of `/`, `./`, `../`.                    |
-| `reserved-authority`   | error   | The ref uses `nref://`, which is kept for cross-repo refs.         |
+| `reserved-authority`   | error   | The ref uses `iref://` (or `iref://`, …), kept for cross-repo refs. |
 | `case-mismatch`        | error   | The path differs from a repo path only by case.                   |
 | `invalid-encoding`     | error   | The percent-encoding is bad.                                      |
 | `target-ignored`       | warn    | The target is untracked or ignored by git.                        |
 
-### `interref.toml`
+### Config file
 
-`interref.toml` at the repo root sets which files are not scanned and changes rule levels:
+The config file at the repo root sets which files are not scanned, which protocols start a ref, and
+the rule levels. It can have one of these names: `interref.toml`, `.interref.toml`, `interref.json`
+or `.interref.json`. Use only one of them; two or more config files is an error.
 
 ```toml
 exclude = ["vendor/**", "**/*.min.js"]
+protocols = ["iref", "sync"]   # the default; add "nref" to keep older refs working
 
 [rules]
 target-ignored = "off"   # "off", "warn" or "error"
 ```
+
+The same config as JSON:
+
+```json
+{
+  "exclude": ["vendor/**", "**/*.min.js"],
+  "protocols": ["iref", "sync"],
+  "rules": { "target-ignored": "off" }
+}
+```
+
+All keys are optional.
 
 In a glob, `**` matches across `/`, and `*` and `?` do not. A glob must match the whole repo path.
 A directory glob such as `vendor/` also matches everything in that directory. Refs that point into
@@ -162,8 +192,8 @@ To debug it, open this repo in VS Code and start "Run interref extension" (F5).
 | Hover          | Shows the target and its first lines (`interref.hover.lines`, default 10).               |
 | Problems       | Broken refs get a red or yellow underline (`interref.diagnostics.enabled`).              |
 | Quick fix      | Cmd/Ctrl+. on a broken ref offers the suggested refs.                                |
-| Copy ref       | Right-click in an editor or the explorer. Copies `nref:/path`, plus `#slug` of the heading above the cursor in Markdown. |
-| Completion     | Type `nref:/` or `nref:./` for paths, and `#` after a Markdown path for headings.    |
+| Copy ref       | Right-click in an editor or the explorer. Copies `iref:/path`, plus `#slug` of the heading above the cursor in Markdown. |
+| Completion     | Type `iref:/` or `iref:./` for paths, and `#` after a Markdown path for headings.    |
 | Graph          | "interref: Show ref graph" (command palette, editor or explorer context menu). Pick 1 or 2 hops around the file, or the whole repo. |
 
 ### Graph preview
@@ -180,7 +210,7 @@ extension first. If it is missing, the command offers to install it.
 Each run writes the file again, so edits that you make to a graph file are lost on the next run.
 
 The extension reads the file list from git. It reads it again when files are created or deleted,
-or when `.gitignore` or `interref.toml` changes. Run "interref: Refresh file index" after other changes,
+or when `.gitignore` or the config file changes. Run "interref: Refresh file index" after other changes,
 for example after `git add`. Headings come from the editor text, so they include unsaved edits.
 
 ## Not done yet

@@ -79,7 +79,7 @@ export function similarPaths(repo: Repo, path: string): string[] {
   return closest(path, siblings, Math.max(2, Math.floor(posix.basename(path).length / 3)));
 }
 
-/** Checks one ref written in `source` (a repo-relative path), with the rule settings of `interref.toml`. */
+/** Checks one ref written in `source` (a repo-relative path), with the rule settings of the config. */
 export function checkRef(repo: Repo, source: string, match: RefMatch, lines: LineIndex): RefRecord {
   const position = lines.position(match.start);
   const base = { source: { path: source, ...position }, raw: match.raw, start: match.start, end: match.end };
@@ -91,14 +91,14 @@ export function checkRef(repo: Repo, source: string, match: RefMatch, lines: Lin
   };
 
   const fragmentSuffix = match.fragment === undefined ? "" : `#${match.fragment}`;
-  const resolved = resolveTarget(source, match.path);
+  const resolved = resolveTarget(source, match.path, match.protocol);
   if (!resolved.ok) {
-    const suggestions = resolved.problem.rule === "bare-path" ? [`nref:./${match.path}${fragmentSuffix}`] : [];
+    const suggestions = resolved.problem.rule === "bare-path" ? [`${match.protocol}:./${match.path}${fragmentSuffix}`] : [];
     return problem(resolved.problem.rule, resolved.problem.message, suggestions);
   }
   const { path, style, trailingSlash } = resolved.value;
   const rewrite = (to: string, kind: EntryKind, slug = match.fragment): string =>
-    formatRef(source, to, { style, directory: kind === "directory" && trailingSlash, slug });
+    formatRef(source, to, { style, directory: kind === "directory" && trailingSlash, slug, protocol: match.protocol });
 
   let kind = repo.kind(path);
   let warning: { rule: RuleId; message: string } | undefined;
@@ -166,10 +166,10 @@ export function checkRef(repo: Repo, source: string, match: RefMatch, lines: Lin
   return { ...base, target, status: "ok", suggestions: [] };
 }
 
-/** Scans and checks every ref in one file. A file that `interref.toml` excludes has none. */
+/** Scans and checks every ref in one file. A file that the config excludes has none. */
 export function checkText(repo: Repo, source: string, text: string): RefRecord[] {
   if (repo.isExcluded(source)) return [];
-  const matches = scanRefs(text);
+  const matches = scanRefs(text, repo.config.protocols);
   if (matches.length === 0) return [];
   const lines = new LineIndex(text);
   return matches.map((match) => checkRef(repo, source, match, lines));
@@ -181,7 +181,7 @@ export interface RepoScan {
   readonly filesScanned: number;
 }
 
-/** Checks the refs in every repo file accepted by `include` and not excluded by `interref.toml`. */
+/** Checks the refs in every repo file accepted by `include` and not excluded by the config. */
 export function scanRepo(repo: Repo, include: (path: string) => boolean = () => true): RepoScan {
   const records: RefRecord[] = [];
   let filesScanned = 0;

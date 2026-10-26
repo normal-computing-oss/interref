@@ -11,7 +11,7 @@ export function makeRepo(tracked: Record<string, string>, untracked: Record<stri
   root: string;
   dispose: () => void;
 } {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "nref-test-")));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "interref-test-")));
   const write = (files: Record<string, string>): void => {
     for (const [path, content] of Object.entries(files)) {
       const file = join(root, ...path.split("/"));

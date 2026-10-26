@@ -74,7 +74,7 @@ export class Repos implements vscode.Disposable {
     return repo;
   }
 
-  /** Lists the files again (git ls-files) and rereads interref.toml. */
+  /** Lists the files again (git ls-files) and rereads the config file. */
   refresh(): void {
     this.repos.clear();
     this.loaded.clear();

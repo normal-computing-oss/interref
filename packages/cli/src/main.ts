@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /** interref: outgoing refs, backlinks, broken refs and the link graph of a git repo. */
 
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import {
   ConfigError,
@@ -26,7 +26,10 @@ import {
   type JsonValue,
 } from "./format.js";
 
-const USAGE = `Usage: interref <command> [options]
+/** The name that the user typed: `iref` is a short name for `interref`. */
+const NAME = basename(process.argv[1] ?? "") === "iref" ? "iref" : "interref";
+
+const USAGE = `Usage: ${NAME} <command> [options]
 
 Commands:
   links <file> [--to <file>]   Refs written in a file, optionally only those that reach <file>
@@ -43,7 +46,8 @@ Options:
   -h, --help                   Show this help
 
 Paths in output are relative to the repo root. Exit codes: 0 clean, 1 broken refs, 2 usage error.
-Only heading fragments (#some-heading) are supported for now.`;
+A ref starts with a protocol name from the config file: iref: or sync: by default.
+Only heading fragments (#some-heading) are supported for now. iref is a short name for interref.`;
 
 class UsageError extends Error {}
 
@@ -272,8 +276,8 @@ main(process.argv.slice(2)).then(
   },
   (error: unknown) => {
     if (error instanceof UsageError || error instanceof GitError || error instanceof ConfigError) {
-      console.error(`interref: ${error.message}`);
-      if (error instanceof UsageError) console.error("Run interref --help for usage.");
+      console.error(`${NAME}: ${error.message}`);
+      if (error instanceof UsageError) console.error(`Run ${NAME} --help for usage.`);
       process.exitCode = 2;
     } else {
       console.error(error);

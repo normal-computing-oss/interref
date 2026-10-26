@@ -1,6 +1,7 @@
 /** Turns the path and fragment of a ref into a repo-relative target. Pure: no file access. */
 
 import { posix } from "node:path";
+import { DEFAULT_PROTOCOLS } from "./syntax.js";
 
 export type RuleId =
   | "missing-file"
@@ -58,10 +59,11 @@ const fail = (rule: RuleId, message: string): { ok: false; problem: Problem } =>
 
 /**
  * Resolves the (percent-encoded) path of a ref written in `source`, which is a repo-relative path.
+ * `protocol` is the name before `:` in the ref; it is used only in messages.
  */
-export function resolveTarget(source: string, encodedPath: string): Result<Target> {
+export function resolveTarget(source: string, encodedPath: string, protocol: string = DEFAULT_PROTOCOLS[0]): Result<Target> {
   if (encodedPath.startsWith("//")) {
-    return fail("reserved-authority", "nref://<repo>/ is reserved for cross-repo refs; use nref:/path");
+    return fail("reserved-authority", `${protocol}://<repo>/ is reserved for cross-repo refs; use ${protocol}:/path`);
   }
   let decoded: string;
   try {
@@ -80,7 +82,7 @@ export function resolveTarget(source: string, encodedPath: string): Result<Targe
     style = "relative";
     joined = `${posix.dirname(source)}/${decoded}`;
   } else {
-    return fail("bare-path", `path must start with /, ./ or ../; did you mean nref:./${encodedPath}?`);
+    return fail("bare-path", `path must start with /, ./ or ../; did you mean ${protocol}:./${encodedPath}?`);
   }
 
   const segments: string[] = [];
@@ -125,22 +127,23 @@ export function encodeRefPath(path: string): string {
 
 /**
  * Writes a ref from `source` to `target` in the given style. A relative ref from a file to
- * itself is written `nref:` + fragment.
+ * itself is written `iref:` + fragment. `protocol` defaults to the first default protocol.
  */
 export function formatRef(
   source: string,
   target: string,
-  options: { style: PathStyle; directory?: boolean; slug?: string | undefined },
+  options: { style: PathStyle; directory?: boolean; slug?: string | undefined; protocol?: string | undefined },
 ): string {
+  const scheme = `${options.protocol ?? DEFAULT_PROTOCOLS[0]}:`;
   const fragment = options.slug === undefined || options.slug === "" ? "" : `#${encodeRefPath(options.slug)}`;
   const slash = options.directory === true && target !== "" ? "/" : "";
-  if (options.style === "self" && target === source) return `nref:${fragment}`;
-  if (options.style === "absolute") return `nref:/${encodeRefPath(target)}${slash}${fragment}`;
+  if (options.style === "self" && target === source) return `${scheme}${fragment}`;
+  if (options.style === "absolute") return `${scheme}/${encodeRefPath(target)}${slash}${fragment}`;
   // Rooted at "/" so that the result never depends on the process working directory.
   let relative = posix.relative(`/${posix.dirname(source)}`, `/${target}`);
   if (relative === "") relative = "./";
   else if (relative === "..") relative = "../";
   else if (relative.startsWith("../")) relative += slash;
   else relative = `./${relative}${slash}`;
-  return `nref:${encodeRefPath(relative)}${fragment}`;
+  return `${scheme}${encodeRefPath(relative)}${fragment}`;
 }

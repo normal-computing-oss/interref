@@ -1,12 +1,13 @@
 # interref for VS Code
 
-This extension makes `nref:` links in comments clickable, and it shows broken links.
+This extension makes `iref:` links in comments clickable, and it shows broken links.
 
 - Cmd/Ctrl+click a ref to open its target. A heading fragment opens the file at that heading.
 - Hover over a ref to see the start of its target.
 - Broken refs show in Problems. Cmd/Ctrl+. offers fixes.
-- "Copy ref" in the editor or explorer context menu copies `nref:/path#heading`.
-- Type `nref:/`, `nref:./` or `#` to get completions for paths and headings.
+- "Copy ref" in the editor or explorer context menu copies `iref:/path#heading`.
+- Type `iref:/`, `iref:./` or `#` to get completions for paths and headings. `iref:`, `sync:` and the
+  other protocols in the config file work the same way.
 - "interref: Show ref graph" opens the link graph around a file, or for the whole repo. You must
   install a viewer extension first: Draw.io Integration (`hediet.vscode-drawio`, the default), or
   for Mermaid the official Mermaid extension (`MermaidChart.vscode-mermaid-chart`) or Mermaid

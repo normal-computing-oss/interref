@@ -5,6 +5,7 @@ import {
   checkText,
   encodeRefPath,
   isMarkdownPath,
+  protocolPattern,
   resolveTarget,
   type RefRecord,
   type Repo,
@@ -234,8 +235,18 @@ export class QuickFixes implements vscode.CodeActionProvider {
   }
 }
 
-// The part of a ref before the cursor: its path so far, and its fragment so far after a `#`.
-const PARTIAL_REF = /(?:(?<=<!--)|(?<![\p{L}\p{N}_-]))nref:([^\s#"'`<>()[\]{}]*)(?:#([^\s"'`<>()[\]{}]*))?$/u;
+const partialRefs = new Map<string, RegExp>();
+
+/** The part of a ref before the cursor: its protocol, its path so far, and its fragment so far after a `#`. */
+function partialRef(protocols: readonly string[]): RegExp {
+  const key = protocols.join(" ");
+  let pattern = partialRefs.get(key);
+  if (pattern === undefined) {
+    pattern = new RegExp(`${protocolPattern(protocols)}([^\\s#"'\`<>()[\\]{}]*)(?:#([^\\s"'\`<>()[\\]{}]*))?$`, "u");
+    partialRefs.set(key, pattern);
+  }
+  return pattern;
+}
 
 export class Completion implements vscode.CompletionItemProvider {
   static readonly triggers = [":", "/", "#"];
@@ -247,13 +258,14 @@ export class Completion implements vscode.CompletionItemProvider {
     position: vscode.Position,
   ): Promise<vscode.CompletionItem[] | undefined> {
     const before = document.lineAt(position.line).text.slice(0, position.character);
-    const partial = PARTIAL_REF.exec(before);
-    if (partial === null) return undefined;
+    if (!before.includes(":")) return undefined;
     const located = await this.repos.locate(document.uri);
     if (located === undefined) return undefined;
     const { repo, path: source } = located;
-    const typedPath = partial[1] ?? "";
-    const typedFragment = partial[2];
+    const partial = partialRef(repo.config.protocols).exec(before);
+    if (partial === null) return undefined;
+    const typedPath = partial[2] ?? "";
+    const typedFragment = partial[3];
 
     if (typedFragment !== undefined) {
       const target = resolveTarget(source, typedPath);

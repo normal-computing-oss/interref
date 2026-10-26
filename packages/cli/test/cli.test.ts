@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, before, describe, it } from "node:test";
@@ -19,12 +19,12 @@ function refs(...args: string[]): { code: number | null; stdout: string; stderr:
 before(() => {
   root = realpathSync(mkdtempSync(join(tmpdir(), "refs-cli-")));
   const files: Record<string, string> = {
-    "docs/auth.md": "# Auth\n\n## Token lifetime\n\n<!-- see nref:./tokens.md -->\n",
-    "docs/tokens.md": "## Tokens\n\n<!-- Implemented in nref:../src/session.ts -->\n",
-    "src/session.ts": "// TTL must match nref:/docs/auth.md#token-lifetime\nexport const ttl = 15;\n",
-    "src/pool.go": "// nref:./config.go and nref:/docs/auth.md#token-lifetimes\n",
-    "interref.toml": 'exclude = ["fixtures/**"]\n',
-    "fixtures/example.md": "nref:/does/not/exist\n",
+    "docs/auth.md": "# Auth\n\n## Token lifetime\n\n<!-- see iref:./tokens.md -->\n",
+    "docs/tokens.md": "## Tokens\n\n<!-- Implemented in iref:../src/session.ts -->\n",
+    "src/session.ts": "// TTL must match iref:/docs/auth.md#token-lifetime\nexport const ttl = 15;\n",
+    "src/pool.go": "// iref:./config.go and iref:/docs/auth.md#token-lifetimes\n",
+    ".interref.json": '{ "exclude": ["fixtures/**"] }\n',
+    "fixtures/example.md": "iref:/does/not/exist\n",
   };
   for (const [path, content] of Object.entries(files)) {
     mkdirSync(dirname(join(root, path)), { recursive: true });
@@ -40,7 +40,7 @@ describe("interref check", () => {
   it("reports broken refs and exits 1", () => {
     const { code, stdout } = refs("check");
     assert.equal(code, 1);
-    assert.match(stdout, /^src\/pool\.go:1:4 {2}error {2}nref:\.\/config\.go {2}no such file/mu);
+    assert.match(stdout, /^src\/pool\.go:1:4 {2}error {2}iref:\.\/config\.go {2}no such file/mu);
     assert.match(stdout, /#token-lifetimes .*did you mean #token-lifetime\? \[missing-anchor\]/u);
     assert.match(stdout, /2 broken refs \(5 refs in 5 files\)$/mu);
     assert.doesNotMatch(stdout, /fixtures/u);
@@ -65,7 +65,7 @@ describe("interref links and backlinks", () => {
   it("lists outgoing refs with their targets and context", () => {
     const { code, stdout } = refs("links", "src/session.ts", "-A", "1");
     assert.equal(code, 0);
-    assert.match(stdout, /src\/session\.ts:1:19 {2}nref:\/docs\/auth\.md#token-lifetime {2}-> docs\/auth\.md#token-lifetime \(line 3\)/u);
+    assert.match(stdout, /src\/session\.ts:1:19 {2}iref:\/docs\/auth\.md#token-lifetime {2}-> docs\/auth\.md#token-lifetime \(line 3\)/u);
     assert.match(stdout, /^ {3}2 \| export const ttl = 15;$/mu);
   });
 
@@ -106,5 +106,18 @@ describe("usage errors", () => {
     assert.equal(refs("links", "missing.md").code, 2);
     assert.equal(refs("check", "--format", "xml").code, 2);
     assert.equal(refs("check", "--bogus").code, 2);
+  });
+
+  it("use the short name iref when the CLI runs as iref", () => {
+    const bin = mkdtempSync(join(tmpdir(), "refs-bin-"));
+    try {
+      symlinkSync(CLI, join(bin, "iref"));
+      const result = spawnSync(process.execPath, [join(bin, "iref"), "nope"], { cwd: root, encoding: "utf8" });
+      assert.equal(result.status, 2);
+      assert.match(result.stderr, /^iref: unknown command "nope"\nRun iref --help for usage\.$/mu);
+      assert.match(refs("nope").stderr, /^interref: unknown command/u);
+    } finally {
+      rmSync(bin, { recursive: true, force: true });
+    }
   });
 });

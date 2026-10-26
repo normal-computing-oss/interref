@@ -2,7 +2,7 @@
   "name": "interref",
   "version": "0.1.0",
   "private": true,
-  "description": "Check, list and graph nref cross-file links written in comments",
+  "description": "Check, list and graph iref: cross-file links written in comments",
   "keywords": [
     "links",
     "references",
@@ -13,7 +13,8 @@
   "license": "UNLICENSED",
   "type": "module",
   "bin": {
-    "interref": "./dist/interref.mjs"
+    "interref": "./dist/interref.mjs",
+    "iref": "./dist/interref.mjs"
   },
   "files": [
     "dist/interref.mjs"

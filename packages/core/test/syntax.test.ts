@@ -6,50 +6,69 @@ const raws = (text: string): string[] => scanRefs(text).map((ref) => ref.raw);
 
 describe("scanRefs", () => {
   it("finds refs in comments of any language", () => {
-    assert.deepEqual(raws("// see nref:./retry.ts#backoff"), ["nref:./retry.ts#backoff"]);
-    assert.deepEqual(raws("# schema: nref:/db/schema.sql"), ["nref:/db/schema.sql"]);
-    assert.deepEqual(raws("-- mirrored in nref:/src/models/user.py"), ["nref:/src/models/user.py"]);
+    assert.deepEqual(raws("// see iref:./retry.ts#backoff"), ["iref:./retry.ts#backoff"]);
+    assert.deepEqual(raws("# schema: iref:/db/schema.sql"), ["iref:/db/schema.sql"]);
+    assert.deepEqual(raws("-- mirrored in iref:/src/models/user.py"), ["iref:/src/models/user.py"]);
   });
 
   it("splits path and fragment", () => {
-    const [ref] = scanRefs("x nref:../api.md#auth y");
+    const [ref] = scanRefs("x iref:../api.md#auth y");
     assert.equal(ref?.path, "../api.md");
     assert.equal(ref?.fragment, "auth");
     assert.equal(ref?.start, 2);
-    assert.equal(ref?.end, 2 + "nref:../api.md#auth".length);
+    assert.equal(ref?.end, 2 + "iref:../api.md#auth".length);
   });
 
   it("trims comment ends and sentence punctuation", () => {
-    assert.deepEqual(raws("<!--nref:./a.md-->"), ["nref:./a.md"]);
-    assert.deepEqual(raws("<!-- nref:./a.md#intro-->"), ["nref:./a.md#intro"]);
-    assert.deepEqual(raws("/*nref:./a.ts*/"), ["nref:./a.ts"]);
-    assert.deepEqual(raws("see nref:./a.md."), ["nref:./a.md"]);
-    assert.deepEqual(raws("see nref:./a.md#b, and nref:/c/!"), ["nref:./a.md#b", "nref:/c/"]);
-    assert.deepEqual(raws("(nref:/a.md#x):"), ["nref:/a.md#x"]);
-    assert.deepEqual(raws("nref:./a.md#."), ["nref:./a.md"]);
+    assert.deepEqual(raws("<!--iref:./a.md-->"), ["iref:./a.md"]);
+    assert.deepEqual(raws("<!-- iref:./a.md#intro-->"), ["iref:./a.md#intro"]);
+    assert.deepEqual(raws("/*iref:./a.ts*/"), ["iref:./a.ts"]);
+    assert.deepEqual(raws("see iref:./a.md."), ["iref:./a.md"]);
+    assert.deepEqual(raws("see iref:./a.md#b, and iref:/c/!"), ["iref:./a.md#b", "iref:/c/"]);
+    assert.deepEqual(raws("(iref:/a.md#x):"), ["iref:/a.md#x"]);
+    assert.deepEqual(raws("iref:./a.md#."), ["iref:./a.md"]);
   });
 
   it("stops at quotes, brackets and whitespace", () => {
-    assert.deepEqual(raws('"nref:/a.ts" `nref:/b.ts` [nref:/c.ts] {nref:/d.ts}'), [
-      "nref:/a.ts",
-      "nref:/b.ts",
-      "nref:/c.ts",
-      "nref:/d.ts",
+    assert.deepEqual(raws('"iref:/a.ts" `iref:/b.ts` [iref:/c.ts] {iref:/d.ts}'), [
+      "iref:/a.ts",
+      "iref:/b.ts",
+      "iref:/c.ts",
+      "iref:/d.ts",
     ]);
   });
 
   it("needs a boundary before the prefix", () => {
-    assert.deepEqual(raws("xnref:/a.ts my-nref:/a.ts _nref:/a.ts énref:/a.ts"), []);
-    assert.deepEqual(raws("ref:/a.ts $ref: xref:a"), []);
+    assert.deepEqual(raws("xiref:/a.ts my-iref:/a.ts _iref:/a.ts éiref:/a.ts async:/a.ts"), []);
+    assert.deepEqual(raws("ref:/a.ts nref:/a.ts"), []);
+  });
+
+  it("finds each protocol and records which one", () => {
+    const found = scanRefs("iref:./b.md sync:../c.md#x");
+    assert.deepEqual(
+      found.map((ref) => [ref.protocol, ref.path, ref.fragment]),
+      [
+        ["iref", "./b.md", undefined],
+        ["sync", "../c.md", "x"],
+      ],
+    );
+  });
+
+  it("uses only the given protocols", () => {
+    const scan = (text: string, protocols: string[]): string[] => scanRefs(text, protocols).map((ref) => ref.raw);
+    assert.deepEqual(scan("iref:/a.ts nref:/b.ts.", ["nref"]), ["nref:/b.ts"]);
+    assert.deepEqual(scan("iref:/a.ts ref:/b.ts", ["ref"]), ["ref:/b.ts"]);
+    assert.deepEqual(scan("my.ref:/a.ts myxref:/b.ts", ["my.ref"]), ["my.ref:/a.ts"]);
+    assert.deepEqual(scan("<!--x+y:-->", ["x+y"]), ["x+y:"]);
   });
 
   it("does not match the escaped form", () => {
-    assert.deepEqual(raws("write nref\\:/path to show the syntax"), []);
+    assert.deepEqual(raws("write iref\\:/path to show the syntax"), []);
   });
 
   it("keeps a lone prefix as a ref to the same file", () => {
-    assert.deepEqual(raws("the `nref:` prefix"), ["nref:"]);
-    assert.deepEqual(raws("ends with nref:"), ["nref:"]);
+    assert.deepEqual(raws("the `iref:` prefix"), ["iref:"]);
+    assert.deepEqual(raws("ends with iref:"), ["iref:"]);
   });
 });
 
