@@ -1,8 +1,8 @@
 {
   "files": [],
   "references": [
-    { "path": "./core" },
-    { "path": "./cli" },
-    { "path": "./vscode" }
+    { "path": "./packages/core" },
+    { "path": "./packages/cli" },
+    { "path": "./packages/vscode" }
   ]
 }

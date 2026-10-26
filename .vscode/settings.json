@@ -1,0 +1,5 @@
+{
+  // Use the tsrs language server from node_modules (needs the TypeScript Native Preview extension).
+  "js/ts.experimental.useTsgo": true,
+  "js/ts.tsdk.path": "./node_modules/tsrs/tsdk"
+}

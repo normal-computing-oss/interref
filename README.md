@@ -12,25 +12,35 @@ the same repo. The design is in the "Proposal: Cross-File Reference System" doc 
 <!-- Implemented in nref:../src/auth/session.ts -->
 ```
 
-| Folder    | Contents                                                                 |
-| --------- | ------------------------------------------------------------------------ |
-| `core/`   | Scanner, path resolution, Markdown headings, checks. Used by both tools. |
-| `cli/`    | `interref`, the command-line tool. Published to npm as `interref`.       |
-| `vscode/` | The VS Code extension.                                                   |
+| Folder             | Package            | Contents                                                                 |
+| ------------------ | ------------------ | ------------------------------------------------------------------------ |
+| `packages/core/`   | `@interref/core`   | Scanner, path resolution, Markdown headings, checks. Used by both tools. |
+| `packages/cli/`    | `interref`         | The command-line tool. Published to npm as `interref`.                   |
+| `packages/vscode/` | `vscode-interref`  | The VS Code extension.                                                   |
 
 All three are TypeScript. The extension calls `core` directly, so the editor and the CLI give the
 same result for the same ref.
 
 ## Setup
 
-You need Node 22 or later.
+You need Node 22 or later and pnpm. The repo is a pnpm workspace. The `packageManager` field in
+`package.json` sets the pnpm version. Shared dependency versions are in the `catalog` of
+`pnpm-workspace.yaml`.
 
 ```sh
-npm install
-npm run build        # tsc for all packages, then esbuild bundles the CLI and the extension
-npm test             # build, then run all tests
-npm run lint         # ESLint; `any` is an error, written or inferred
+pnpm install
+pnpm build           # tsrs for all packages, then esbuild bundles the CLI and the extension
+pnpm test            # build, then run the tests of all packages
+pnpm lint            # oxlint with type-aware rules; `any` is an error, written or inferred
 ```
+
+The type checker is [tsrs](https://github.com/oxc-project/tsrs), a Rust port of TypeScript 7. Use
+`pnpm exec tsrs` where you would use `tsc`. The linter is [oxlint](https://oxc.rs/docs/guide/usage/linter);
+its rules are in `.oxlintrc.json`. tsrs is a beta, so its version is pinned exactly.
+
+In VS Code, install the extensions that the workspace recommends: "TypeScript (Native Preview)" and
+"Oxc". `.vscode/settings.json` makes the TypeScript extension use the tsrs language server from
+`node_modules`. VS Code asks you to trust the workspace before it starts that server.
 
 ## Syntax
 
@@ -69,13 +79,13 @@ the nearest correct slug.
 Run it from anywhere in the repo that you want to check:
 
 ```sh
-node ~/workspace/interref/cli/dist/interref.mjs check
-# or put `interref` on your PATH (run this in the interref repo):
-npm link -w cli
+node ~/workspace/interref/packages/cli/dist/interref.mjs check
+# or put `interref` on your PATH (run this in the interref repo; ~/.local/bin must be on PATH):
+ln -s "$PWD/packages/cli/dist/interref.mjs" ~/.local/bin/interref
 ```
 
-`npm run build` writes the CLI and `@interref/core` into one file, `cli/dist/interref.mjs`. That
-file is the whole npm package, so it has no dependencies at run time.
+`pnpm build` writes the CLI and `@interref/core` into one file, `packages/cli/dist/interref.mjs`.
+That file is the whole npm package, so it has no dependencies at run time.
 
 | Command                           | Output                                                             |
 | --------------------------------- | ------------------------------------------------------------------ |
@@ -140,8 +150,8 @@ an excluded file still resolve.
 Build and install it:
 
 ```sh
-npm run package                       # makes vscode/interref.vsix
-code --install-extension vscode/interref.vsix
+pnpm package                                   # makes packages/vscode/interref.vsix
+code --install-extension packages/vscode/interref.vsix
 ```
 
 To debug it, open this repo in VS Code and start "Run interref extension" (F5).

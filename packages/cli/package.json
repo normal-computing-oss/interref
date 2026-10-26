@@ -22,9 +22,12 @@
     "node": ">=22"
   },
   "scripts": {
-    "bundle": "node esbuild.mjs"
+    "bundle": "node esbuild.mjs",
+    "test": "node --test \"dist/test/**/*.test.js\""
   },
   "devDependencies": {
-    "@interref/core": "0.1.0"
+    "@interref/core": "workspace:*",
+    "@types/node": "catalog:",
+    "esbuild": "catalog:"
   }
 }

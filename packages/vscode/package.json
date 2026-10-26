@@ -105,7 +105,10 @@
     "package": "vsce package --no-dependencies --skip-license --allow-missing-repository --out interref.vsix"
   },
   "devDependencies": {
-    "@interref/core": "0.1.0",
-    "@vscode/vsce": "^4.0.0"
+    "@interref/core": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/vscode": "~1.100.0",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "catalog:"
   }
 }

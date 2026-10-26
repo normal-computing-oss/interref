@@ -3,29 +3,22 @@
   "private": true,
   "description": "interref: a CLI and a VS Code extension for nref cross-file links in comments",
   "type": "module",
-  "workspaces": [
-    "core",
-    "cli",
-    "vscode"
-  ],
+  "packageManager": "pnpm@12.11.2",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc -b && npm run bundle -w cli && npm run bundle -w vscode",
-    "lint": "eslint .",
-    "test": "npm run build && node --test \"core/dist/test/**/*.test.js\" \"cli/dist/test/**/*.test.js\"",
-    "check": "npm run lint && npm test",
-    "package": "npm run build && npm run package -w vscode",
-    "clean": "tsc -b --clean && rm -rf vscode/dist vscode/*.vsix"
+    "build": "tsrs -b && pnpm -r bundle",
+    "lint": "oxlint --type-aware --deny-warnings",
+    "test": "pnpm build && pnpm -r test",
+    "check": "pnpm lint && pnpm test",
+    "package": "pnpm build && pnpm --filter vscode-interref package",
+    "clean": "tsrs -b --clean && rm -rf packages/*/dist packages/vscode/*.vsix"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@types/node": "^22.20.5",
-    "@types/vscode": "~1.100.0",
-    "esbuild": "^0.28.2",
-    "eslint": "^10.13.0",
-    "typescript": "~6.0.3",
-    "typescript-eslint": "^8.72.0"
+    "@types/node": "catalog:",
+    "oxlint": "^1.89.0",
+    "oxlint-tsgolint": "^7.0.2005",
+    "tsrs": "0.20.0-ts7.1.0-beta"
   }
 }
