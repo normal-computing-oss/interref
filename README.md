@@ -153,7 +153,7 @@ or `.interref.json`. Use only one of them; two or more config files is an error.
 
 ```toml
 exclude = ["vendor/**", "**/*.min.js"]
-protocols = ["iref", "sync"]   # the default; add "nref" to keep older refs working
+protocols = ["iref", "sync"]   # the default
 
 [rules]
 target-ignored = "off"   # "off", "warn" or "error"
