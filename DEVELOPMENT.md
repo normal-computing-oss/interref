@@ -5,11 +5,11 @@ design is in the "Proposal: Cross-File Reference System" doc (2026-10-19).
 
 ## Packages
 
-| Folder             | Package            | Contents                                                                 |
-| ------------------ | ------------------ | ------------------------------------------------------------------------ |
-| `packages/core/`   | `@interref/core`   | Scanner, path resolution, Markdown headings, checks. Used by both tools. |
-| `packages/cli/`    | `interref`         | The command-line tool. Published to npm as `interref`.                   |
-| `packages/vscode/` | `vscode-interref`  | The VS Code extension. Attached to each GitHub release as a `.vsix`.     |
+| Folder             | Package                      | Contents                                                                 |
+| ------------------ | ---------------------------- | ------------------------------------------------------------------------ |
+| `packages/core/`   | `@interref/core`             | Scanner, path resolution, Markdown headings, checks. Used by both tools. |
+| `packages/cli/`    | `@normal-computing/interref` | The command-line tool. Its commands are `interref` and `iref`.           |
+| `packages/vscode/` | `vscode-interref`            | The VS Code extension. Attached to each GitHub release as a `.vsix`.     |
 
 All three are TypeScript. The extension calls `core` directly, so the editor and the CLI give the
 same result for the same ref. `@interref/core` is not published. esbuild bundles it into the CLI and
@@ -91,12 +91,17 @@ publish the same version again. Make the GitHub release by hand, or release the 
 
 ### One-time npm setup
 
+The package name has a scope because npm refuses the unscoped names `interref`, `inter-ref` and
+`iref`. They are too similar to the existing package `interpret`.
+
 npm accepts a trusted publisher only for a package that exists. Thus, the first publish is manual:
 
-1. Run `pnpm build`, then in `packages/cli`, run `pnpm pack` and `npm publish interref-<version>.tgz`.
-   You must be logged in to npm (`npm login`).
-2. On npmjs.com, open the settings of the `interref` package and add a trusted publisher: GitHub
-   Actions, repository `normal-computing-oss/interref`, workflow `release.yml`.
+1. Make the npm org `normal-computing` (npmjs.com/org/create). Public packages are free.
+2. Run `pnpm build`, then in `packages/cli`, run `pnpm pack` and
+   `npm publish ./normal-computing-interref-<version>.tgz --tag next`. You must be logged in to npm
+   (`npm login`).
+3. On npmjs.com, open the settings of `@normal-computing/interref` and add a trusted publisher:
+   GitHub Actions, repository `normal-computing-oss/interref`, workflow `release.yml`.
 
 ## Not done yet
 

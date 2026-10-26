@@ -21,8 +21,8 @@ so they give the same result for the same ref.
 The CLI needs Node 22 or later:
 
 ```sh
-npm install --global interref    # installs two names for the same tool: `interref` and `iref`
-npx interref check               # or run it with no install
+npm install --global @normal-computing/interref   # installs two commands: `interref` and `iref`
+npx @normal-computing/interref check               # or run it with no install
 ```
 
 For the VS Code extension, download `interref-<version>.vsix` from the
@@ -120,7 +120,7 @@ A red dashed arrow is a broken ref, and a number on an arrow counts the refs it 
 - uses: actions/setup-node@v5
   with:
     node-version: 22
-- run: npx --yes interref check
+- run: npx --yes @normal-computing/interref check
 ```
 
 ### Rules

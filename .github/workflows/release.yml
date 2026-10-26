@@ -44,12 +44,13 @@ jobs:
           ls -l release
 
       # pnpm packs, so the tarball has no workspace: versions. npm publishes, because it does
-      # the trusted publishing and adds provenance.
+      # the trusted publishing and adds provenance. The path must start with ./, or npm reads
+      # release/… as a GitHub repo.
       - name: Publish the CLI to npm
         run: |
           case "$GITHUB_REF_NAME" in
-            *-*) npm publish release/interref-*.tgz --tag next ;;
-            *) npm publish release/interref-*.tgz ;;
+            *-*) npm publish ./release/*.tgz --tag next ;;
+            *) npm publish ./release/*.tgz ;;
           esac
 
       - name: Make the GitHub release

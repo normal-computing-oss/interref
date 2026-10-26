@@ -1,5 +1,5 @@
 {
-  "name": "interref",
+  "name": "@normal-computing/interref",
   "version": "0.2.0-beta.1",
   "description": "Check, list and graph iref: cross-file links written in comments",
   "keywords": [
@@ -25,6 +25,9 @@
   "files": [
     "dist/interref.mjs"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=22"
   },
