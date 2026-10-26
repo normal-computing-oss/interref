@@ -1,6 +1,6 @@
 /** Text, JSON and SARIF renderings of ref records. */
 
-import { displayPath, LineIndex, RULE_SEVERITY, type RefRecord, type Repo, type RuleId } from "@nref/core";
+import { displayPath, LineIndex, RULE_SEVERITY, type RefRecord, type Repo, type RuleId } from "@interref/core";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
@@ -125,6 +125,6 @@ export function sarif(records: readonly RefRecord[]): JsonValue {
   return {
     version: "2.1.0",
     $schema: "https://json.schemastore.org/sarif-2.1.0.json",
-    runs: [{ tool: { driver: { name: "refs", rules } }, results }],
+    runs: [{ tool: { driver: { name: "interref", rules } }, results }],
   };
 }

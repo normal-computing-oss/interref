@@ -1,21 +1,21 @@
-# nref tools
+# interref
 
-`nref:` is a link that you write in a comment. It points from any file in this repo to another
-file, directory or Markdown heading. These tools make the links clickable in VS Code and checkable
-in CI. The design is in the "Proposal: Cross-File Reference System" doc (2026-10-19).
+interref makes `nref:` links checkable in CI and clickable in VS Code. You write an `nref:` link in
+a comment. It points from any file in a git repo to another file, directory or Markdown heading in
+the same repo. The design is in the "Proposal: Cross-File Reference System" doc (2026-10-19).
 
 ```python
-# Timing comes from nref:/fuji/arch/docs/architecture/mccu/backend/index.md#u200-rowcopy-timing-example
+# Token TTL must match the docs: nref:/docs/auth.md#token-lifetime
 ```
 
 ```markdown
-<!-- nref:../src/mccu_model/timing.py -->
+<!-- Implemented in nref:../src/auth/session.ts -->
 ```
 
 | Folder    | Contents                                                                 |
 | --------- | ------------------------------------------------------------------------ |
 | `core/`   | Scanner, path resolution, Markdown headings, checks. Used by both tools. |
-| `cli/`    | `refs`, the command-line tool.                                           |
+| `cli/`    | `interref`, the command-line tool. Published to npm as `interref`.       |
 | `vscode/` | The VS Code extension.                                                   |
 
 All three are TypeScript. The extension calls `core` directly, so the editor and the CLI give the
@@ -26,9 +26,8 @@ same result for the same ref.
 You need Node 22 or later.
 
 ```sh
-cd tools/nref
 npm install
-npm run build        # tsc for core and cli, esbuild for the extension
+npm run build        # tsc for all packages, then esbuild bundles the CLI and the extension
 npm test             # build, then run all tests
 npm run lint         # ESLint; `any` is an error, written or inferred
 ```
@@ -62,27 +61,28 @@ punctuation, change each space to `-`, and add `-1`, `-2` to repeated headings. 
 Line fragments (`#L42`, `#L40-L72`) and anchors (`#^name`) are errors (`unsupported-fragment`).
 
 Note: the MkDocs site makes some heading ids differently from GitHub. For example, it merges
-repeated hyphens. Use the GitHub form. When a slug is wrong, `refs check` and the editor suggest
+repeated hyphens. Use the GitHub form. When a slug is wrong, `interref check` and the editor suggest
 the nearest correct slug.
 
 ## CLI
 
-Run it from anywhere in the repo:
+Run it from anywhere in the repo that you want to check:
 
 ```sh
-node tools/nref/cli/dist/src/main.js check
-# or, from tools/nref:
-npx refs check
-# or put `refs` on your PATH:
+node ~/workspace/interref/cli/dist/interref.mjs check
+# or put `interref` on your PATH (run this in the interref repo):
 npm link -w cli
 ```
 
+`npm run build` writes the CLI and `@interref/core` into one file, `cli/dist/interref.mjs`. That
+file is the whole npm package, so it has no dependencies at run time.
+
 | Command                           | Output                                                             |
 | --------------------------------- | ------------------------------------------------------------------ |
-| `refs check [<path>...]`          | Broken refs in the repo, or under the paths. Exit 1 if any.        |
-| `refs links <file> [--to <file>]` | Refs that a file holds and where each one goes.                    |
-| `refs backlinks <file>`           | Refs in the repo that point at a file or directory.                |
-| `refs graph [<file>]`             | The link graph: `--format dot` (default), `mermaid`, `json` or `drawio`. |
+| `interref check [<path>...]`          | Broken refs in the repo, or under the paths. Exit 1 if any.        |
+| `interref links <file> [--to <file>]` | Refs that a file holds and where each one goes.                    |
+| `interref backlinks <file>`           | Refs in the repo that point at a file or directory.                |
+| `interref graph [<file>]`             | The link graph: `--format dot` (default), `mermaid`, `json` or `drawio`. |
 
 | Option                    | Effect                                                                  |
 | ------------------------- | ----------------------------------------------------------------------- |
@@ -92,17 +92,17 @@ npm link -w cli
 | `-T N`, `--show-target N` | Show N lines of the target, from the heading or from the top.           |
 | `--format F`              | `text`, `json`, `ndjson`; `check` also has `sarif`.                     |
 
-Exit codes: 0 clean, 1 broken refs, 2 usage, git or `refs.toml` error.
+Exit codes: 0 clean, 1 broken refs, 2 usage, git or `interref.toml` error.
 
-`refs graph --format drawio > refs.drawio` writes a file that draw.io (or the Draw.io Integration
+`interref graph --format drawio > refs.drawio` writes a file that draw.io (or the Draw.io Integration
 extension in VS Code) opens. The tool places the nodes itself, from left to right: a file is one
 column after the files that link to it. Files are blue boxes and directories are yellow folders.
 A red dashed arrow is a broken ref, and a number on an arrow counts the refs it stands for. With
-`refs graph <file>`, that file has a thick border.
+`interref graph <file>`, that file has a thick border.
 
 ```console
-$ refs check
-fuji/a.py:3:5  error  nref:/fuji/arch/docs/x.md#tokn  no heading #tokn in fuji/arch/docs/x.md; did you mean #token? [missing-anchor]  (fix: nref:/fuji/arch/docs/x.md#token)
+$ interref check
+src/auth/session.ts:3:5  error  nref:/docs/auth.md#tokn  no heading #tokn in docs/auth.md; did you mean #token? [missing-anchor]  (fix: nref:/docs/auth.md#token)
 1 broken ref (15 refs in 2160 files)
 ```
 
@@ -120,9 +120,9 @@ fuji/a.py:3:5  error  nref:/fuji/arch/docs/x.md#tokn  no heading #tokn in fuji/a
 | `invalid-encoding`     | error   | The percent-encoding is bad.                                      |
 | `target-ignored`       | warn    | The target is untracked or ignored by git.                        |
 
-### `refs.toml`
+### `interref.toml`
 
-`refs.toml` at the repo root sets which files are not scanned and changes rule levels:
+`interref.toml` at the repo root sets which files are not scanned and changes rule levels:
 
 ```toml
 exclude = ["vendor/**", "**/*.min.js"]
@@ -140,45 +140,44 @@ an excluded file still resolve.
 Build and install it:
 
 ```sh
-cd tools/nref
-npm run package                       # makes vscode/nref.vsix
-code --install-extension vscode/nref.vsix
+npm run package                       # makes vscode/interref.vsix
+code --install-extension vscode/interref.vsix
 ```
 
-To debug it, open `tools/nref` in VS Code and start "Run nref extension" (F5).
+To debug it, open this repo in VS Code and start "Run interref extension" (F5).
 
 | Feature        | What you do                                                                          |
 | -------------- | ------------------------------------------------------------------------------------ |
 | Follow         | Cmd/Ctrl+click a ref. A file opens at the heading. A directory shows in the explorer. |
-| Hover          | Shows the target and its first lines (`nref.hover.lines`, default 10).               |
-| Problems       | Broken refs get a red or yellow underline (`nref.diagnostics.enabled`).              |
+| Hover          | Shows the target and its first lines (`interref.hover.lines`, default 10).               |
+| Problems       | Broken refs get a red or yellow underline (`interref.diagnostics.enabled`).              |
 | Quick fix      | Cmd/Ctrl+. on a broken ref offers the suggested refs.                                |
 | Copy ref       | Right-click in an editor or the explorer. Copies `nref:/path`, plus `#slug` of the heading above the cursor in Markdown. |
 | Completion     | Type `nref:/` or `nref:./` for paths, and `#` after a Markdown path for headings.    |
-| Graph          | "nref: Show ref graph" (command palette, editor or explorer context menu). Pick 1 or 2 hops around the file, or the whole repo. |
+| Graph          | "interref: Show ref graph" (command palette, editor or explorer context menu). Pick 1 or 2 hops around the file, or the whole repo. |
 
 ### Graph preview
 
-"nref: Show ref graph" writes the graph to a file in the extension's storage folder and opens it
-in a viewer extension. The `nref.graph.viewer` setting selects the viewer. You must install that
+"interref: Show ref graph" writes the graph to a file in the extension's storage folder and opens it
+in a viewer extension. The `interref.graph.viewer` setting selects the viewer. You must install that
 extension first. If it is missing, the command offers to install it.
 
-| `nref.graph.viewer` | Extension to install                                    | What you get                                                                   |
+| `interref.graph.viewer` | Extension to install                                    | What you get                                                                   |
 | ------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `drawio` (default)  | Draw.io Integration (`hediet.vscode-drawio`)            | The same layout as `refs graph --format drawio`. Turn on "Code Link" in the status bar, then double-click a node to open its file. |
+| `drawio` (default)  | Draw.io Integration (`hediet.vscode-drawio`)            | The same layout as `interref graph --format drawio`. Turn on "Code Link" in the status bar, then double-click a node to open its file. |
 | `mermaid`           | Mermaid, the official one (`MermaidChart.vscode-mermaid-chart`), or else Mermaid Preview (`vstirbu.vscode-mermaid-preview`) | A `.mmd` file and its preview. Mermaid lays out the graph itself. If both are installed, Mermaid is used. |
 
 Each run writes the file again, so edits that you make to a graph file are lost on the next run.
 
 The extension reads the file list from git. It reads it again when files are created or deleted,
-or when `.gitignore` or `refs.toml` changes. Run "nref: Refresh file index" after other changes,
+or when `.gitignore` or `interref.toml` changes. Run "interref: Refresh file index" after other changes,
 for example after `git add`. Headings come from the editor text, so they include unsaved edits.
 
 ## Not done yet
 
 - Line and anchor fragments, and the `duplicate-anchor`, `line-ref` and `stale-line` rules.
-- `refs mv`, `refs check --changed`, `--include`/`--exclude` flags, and the blob-hash cache.
-- `refs lsp`. Because the extension uses `core` directly, it does not need a language server.
+- `interref mv`, `interref check --changed`, `--include`/`--exclude` flags, and the blob-hash cache.
+- `interref lsp`. Because the extension uses `core` directly, it does not need a language server.
   Add one only if another editor needs one.
 - Backlinks panel and rename safety in the extension.
 - The graph preview does not update by itself. Run the command again after you change refs.

@@ -5,7 +5,7 @@
  */
 
 import { basename, relative, sep } from "node:path";
-import { graphView, RefGraph, scanRepo, toDrawio, toMermaid, type GraphView, type Repo } from "@nref/core";
+import { graphView, RefGraph, scanRepo, toDrawio, toMermaid, type GraphView, type Repo } from "@interref/core";
 import * as vscode from "vscode";
 import type { Repos } from "./repos.js";
 
@@ -29,7 +29,7 @@ interface Viewer {
 }
 
 const DRAWIO_EDITOR = "hediet.vscode-drawio-text";
-const CODE_LINK_TIP = "nref.graph.codeLinkTipShown";
+const CODE_LINK_TIP = "interref.graph.codeLinkTipShown";
 
 const VIEWERS: Readonly<Record<ViewerId, Viewer>> = {
   drawio: {
@@ -56,7 +56,7 @@ const VIEWERS: Readonly<Record<ViewerId, Viewer>> = {
       if (command !== undefined && (await vscode.commands.getCommands(true)).includes(command)) {
         await vscode.commands.executeCommand(command);
       } else {
-        void vscode.window.showInformationMessage(`nref: open the preview with the ${provider.name} extension.`);
+        void vscode.window.showInformationMessage(`interref: open the preview with the ${provider.name} extension.`);
       }
     },
   },
@@ -70,7 +70,7 @@ async function findProvider(viewer: Viewer): Promise<Provider | undefined> {
   if (installed !== undefined) return installed;
   const names = viewer.providers.map((provider) => provider.name).join(" or ");
   const choice = await vscode.window.showWarningMessage(
-    `nref: the ref graph needs the ${names} extension. Install one, or change the nref.graph.viewer setting.`,
+    `interref: the ref graph needs the ${names} extension. Install one, or change the interref.graph.viewer setting.`,
     ...viewer.providers.map((provider) => `Install ${provider.name}`),
   );
   const chosen = viewer.providers.find((provider) => choice === `Install ${provider.name}`);
@@ -94,7 +94,7 @@ async function pickScope(center: string | undefined): Promise<Scope | undefined>
       { label: `$(target) Around ${name}`, description: "2 hops", depth: 2 },
       whole,
     ],
-    { title: "nref: Show ref graph", placeHolder: "Which part of the graph?" },
+    { title: "interref: Show ref graph", placeHolder: "Which part of the graph?" },
   );
 }
 
@@ -105,7 +105,7 @@ function fileName(repo: Repo, center: string | undefined): string {
 }
 
 export async function showGraph(context: vscode.ExtensionContext, repos: Repos, argument: unknown): Promise<void> {
-  const viewerId = vscode.workspace.getConfiguration("nref").get<ViewerId>("graph.viewer", "drawio");
+  const viewerId = vscode.workspace.getConfiguration("interref").get<ViewerId>("graph.viewer", "drawio");
   const viewer = VIEWERS[viewerId];
   const provider = await findProvider(viewer);
   if (provider === undefined) return;
@@ -116,7 +116,7 @@ export async function showGraph(context: vscode.ExtensionContext, repos: Repos, 
       : (vscode.window.activeTextEditor?.document.uri ?? vscode.workspace.workspaceFolders?.[0]?.uri);
   const located = uri === undefined ? undefined : await repos.locate(uri);
   if (located === undefined) {
-    void vscode.window.showWarningMessage("nref: open a file in a git repo to show its ref graph");
+    void vscode.window.showWarningMessage("interref: open a file in a git repo to show its ref graph");
     return;
   }
   const { repo } = located;
@@ -126,7 +126,7 @@ export async function showGraph(context: vscode.ExtensionContext, repos: Repos, 
   const center = scope.depth === undefined ? undefined : located.path;
 
   const view = await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Window, title: "nref: building the ref graph" },
+    { location: vscode.ProgressLocation.Window, title: "interref: building the ref graph" },
     () =>
       Promise.resolve(
         graphView(new RefGraph(scanRepo(repo).records), {
@@ -138,7 +138,7 @@ export async function showGraph(context: vscode.ExtensionContext, repos: Repos, 
   );
   if (view.edges.length === 0) {
     void vscode.window.showInformationMessage(
-      center === undefined ? "nref: this repo has no refs between files" : `nref: no refs to or from ${center}`,
+      center === undefined ? "interref: this repo has no refs between files" : `interref: no refs to or from ${center}`,
     );
     return;
   }
@@ -152,7 +152,7 @@ export async function showGraph(context: vscode.ExtensionContext, repos: Repos, 
   if (viewerId === "drawio" && context.globalState.get<boolean>(CODE_LINK_TIP) !== true) {
     await context.globalState.update(CODE_LINK_TIP, true);
     void vscode.window.showInformationMessage(
-      'nref: turn on "Code Link" in the status bar, then double-click a node to open its file.',
+      'interref: turn on "Code Link" in the status bar, then double-click a node to open its file.',
     );
   }
 }

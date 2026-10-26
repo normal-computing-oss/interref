@@ -181,7 +181,7 @@ export function toDrawio(view: GraphView, options: DrawioOptions = {}): string {
   });
 
   return [
-    '<mxfile host="refs">',
+    '<mxfile host="interref">',
     '  <diagram id="refs" name="refs graph">',
     '    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" math="0" shadow="0">',
     "      <root>",

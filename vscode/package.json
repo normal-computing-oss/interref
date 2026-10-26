@@ -1,7 +1,7 @@
 {
-  "name": "nref",
-  "displayName": "nref",
-  "description": "Follow, preview and check nref cross-file references in comments",
+  "name": "vscode-interref",
+  "displayName": "interref",
+  "description": "Follow, preview, check and graph nref cross-file links in comments",
   "version": "0.1.0",
   "publisher": "normal-computing",
   "private": true,
@@ -19,72 +19,72 @@
   "contributes": {
     "commands": [
       {
-        "command": "nref.copyRef",
+        "command": "interref.copyRef",
         "title": "Copy ref",
-        "category": "nref"
+        "category": "interref"
       },
       {
-        "command": "nref.showGraph",
+        "command": "interref.showGraph",
         "title": "Show ref graph",
-        "category": "nref",
+        "category": "interref",
         "icon": "$(type-hierarchy)"
       },
       {
-        "command": "nref.refresh",
+        "command": "interref.refresh",
         "title": "Refresh file index",
-        "category": "nref"
+        "category": "interref"
       },
       {
-        "command": "nref.revealDirectory",
+        "command": "interref.revealDirectory",
         "title": "Reveal directory",
-        "category": "nref"
+        "category": "interref"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "nref.copyRef",
+          "command": "interref.copyRef",
           "when": "resourceScheme == file",
           "group": "9_cutcopypaste@9"
         },
         {
-          "command": "nref.showGraph",
+          "command": "interref.showGraph",
           "when": "resourceScheme == file",
           "group": "9_cutcopypaste@10"
         }
       ],
       "explorer/context": [
         {
-          "command": "nref.copyRef",
+          "command": "interref.copyRef",
           "group": "6_copypath@9"
         },
         {
-          "command": "nref.showGraph",
+          "command": "interref.showGraph",
           "group": "6_copypath@10"
         }
       ],
       "commandPalette": [
         {
-          "command": "nref.revealDirectory",
+          "command": "interref.revealDirectory",
           "when": "false"
         }
       ]
     },
     "configuration": {
-      "title": "nref",
+      "title": "interref",
       "properties": {
-        "nref.diagnostics.enabled": {
+        "interref.diagnostics.enabled": {
           "type": "boolean",
           "default": true,
           "description": "Underline broken refs in open files."
         },
-        "nref.hover.lines": {
+        "interref.hover.lines": {
           "type": "number",
           "default": 10,
           "minimum": 0,
           "description": "Lines of the target to show when you hover over a ref."
         },
-        "nref.graph.viewer": {
+        "interref.graph.viewer": {
           "type": "string",
           "enum": [
             "drawio",
@@ -95,17 +95,17 @@
             "Open the graph in the official Mermaid extension (MermaidChart.vscode-mermaid-chart), or else in Mermaid Preview (vstirbu.vscode-mermaid-preview)."
           ],
           "default": "drawio",
-          "description": "The extension that shows \"nref: Show ref graph\". It must be installed; the command offers to install it."
+          "description": "The extension that shows \"interref: Show ref graph\". It must be installed; the command offers to install it."
         }
       }
     }
   },
   "scripts": {
     "bundle": "node esbuild.mjs",
-    "package": "vsce package --no-dependencies --skip-license --allow-missing-repository --out nref.vsix"
+    "package": "vsce package --no-dependencies --skip-license --allow-missing-repository --out interref.vsix"
   },
   "devDependencies": {
-    "@nref/core": "0.1.0",
+    "@interref/core": "0.1.0",
     "@vscode/vsce": "^4.0.0"
   }
 }

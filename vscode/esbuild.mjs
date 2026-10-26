@@ -1,4 +1,4 @@
-// Bundles the extension and @nref/core (from its TypeScript source) into one CommonJS file.
+// Bundles the extension and @interref/core (from its TypeScript source) into one CommonJS file.
 import { build } from "esbuild";
 
 await build({

@@ -1,7 +1,7 @@
 {
-  "name": "nref-tools",
+  "name": "interref-workspace",
   "private": true,
-  "description": "CLI and VS Code extension for nref cross-file references in comments",
+  "description": "interref: a CLI and a VS Code extension for nref cross-file links in comments",
   "type": "module",
   "workspaces": [
     "core",
@@ -12,7 +12,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc -b && npm run bundle -w vscode",
+    "build": "tsc -b && npm run bundle -w cli && npm run bundle -w vscode",
     "lint": "eslint .",
     "test": "npm run build && node --test \"core/dist/test/**/*.test.js\" \"cli/dist/test/**/*.test.js\"",
     "check": "npm run lint && npm test",

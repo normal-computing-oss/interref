@@ -79,7 +79,7 @@ export function similarPaths(repo: Repo, path: string): string[] {
   return closest(path, siblings, Math.max(2, Math.floor(posix.basename(path).length / 3)));
 }
 
-/** Checks one ref written in `source` (a repo-relative path), with the rule settings of `refs.toml`. */
+/** Checks one ref written in `source` (a repo-relative path), with the rule settings of `interref.toml`. */
 export function checkRef(repo: Repo, source: string, match: RefMatch, lines: LineIndex): RefRecord {
   const position = lines.position(match.start);
   const base = { source: { path: source, ...position }, raw: match.raw, start: match.start, end: match.end };
@@ -166,7 +166,7 @@ export function checkRef(repo: Repo, source: string, match: RefMatch, lines: Lin
   return { ...base, target, status: "ok", suggestions: [] };
 }
 
-/** Scans and checks every ref in one file. A file that `refs.toml` excludes has none. */
+/** Scans and checks every ref in one file. A file that `interref.toml` excludes has none. */
 export function checkText(repo: Repo, source: string, text: string): RefRecord[] {
   if (repo.isExcluded(source)) return [];
   const matches = scanRefs(text);
@@ -181,7 +181,7 @@ export interface RepoScan {
   readonly filesScanned: number;
 }
 
-/** Checks the refs in every repo file accepted by `include` and not excluded by `refs.toml`. */
+/** Checks the refs in every repo file accepted by `include` and not excluded by `interref.toml`. */
 export function scanRepo(repo: Repo, include: (path: string) => boolean = () => true): RepoScan {
   const records: RefRecord[] = [];
   let filesScanned = 0;

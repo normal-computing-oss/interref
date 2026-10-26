@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** refs: outgoing refs, backlinks, broken refs and the link graph of a git repo. */
+/** interref: outgoing refs, backlinks, broken refs and the link graph of a git repo. */
 
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
@@ -14,7 +14,7 @@ import {
   toDrawio,
   toMermaid,
   type RefRecord,
-} from "@nref/core";
+} from "@interref/core";
 import {
   contextBlock,
   describeTarget,
@@ -26,7 +26,7 @@ import {
   type JsonValue,
 } from "./format.js";
 
-const USAGE = `Usage: refs <command> [options]
+const USAGE = `Usage: interref <command> [options]
 
 Commands:
   links <file> [--to <file>]   Refs written in a file, optionally only those that reach <file>
@@ -272,8 +272,8 @@ main(process.argv.slice(2)).then(
   },
   (error: unknown) => {
     if (error instanceof UsageError || error instanceof GitError || error instanceof ConfigError) {
-      console.error(`refs: ${error.message}`);
-      if (error instanceof UsageError) console.error("Run refs --help for usage.");
+      console.error(`interref: ${error.message}`);
+      if (error instanceof UsageError) console.error("Run interref --help for usage.");
       process.exitCode = 2;
     } else {
       console.error(error);

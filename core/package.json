@@ -1,8 +1,8 @@
 {
-  "name": "@nref/core",
+  "name": "@interref/core",
   "version": "0.1.0",
   "private": true,
-  "description": "Scanner, resolver and checker shared by the refs CLI and the nref VS Code extension",
+  "description": "Scanner, resolver and checker shared by the interref CLI and VS Code extension",
   "type": "module",
   "exports": {
     ".": {

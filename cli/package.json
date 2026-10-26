@@ -1,14 +1,30 @@
 {
-  "name": "@nref/cli",
+  "name": "interref",
   "version": "0.1.0",
   "private": true,
-  "description": "refs: list, check and graph nref cross-file references",
+  "description": "Check, list and graph nref cross-file links written in comments",
+  "keywords": [
+    "links",
+    "references",
+    "comments",
+    "documentation",
+    "lint"
+  ],
+  "license": "UNLICENSED",
   "type": "module",
   "bin": {
-    "refs": "./dist/src/main.js"
+    "interref": "./dist/interref.mjs"
   },
-  "dependencies": {
-    "@nref/cli": "file:",
-    "@nref/core": "0.1.0"
+  "files": [
+    "dist/interref.mjs"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "bundle": "node esbuild.mjs"
+  },
+  "devDependencies": {
+    "@interref/core": "0.1.0"
   }
 }

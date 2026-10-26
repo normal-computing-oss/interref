@@ -1,5 +1,5 @@
 /**
- * `refs.toml` at the repo root. Only the subset that the proposal uses is read:
+ * `interref.toml` at the repo root. Only the subset that the proposal uses is read:
  *
  *     exclude = ["vendor/**", "**\/*.min.js"]
  *
@@ -9,7 +9,7 @@
 
 import { RULE_SEVERITY, type RuleId, type Severity } from "./resolve.js";
 
-export const CONFIG_FILE = "refs.toml";
+export const CONFIG_FILE = "interref.toml";
 
 export type RuleSetting = Severity | "off";
 

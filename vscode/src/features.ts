@@ -8,12 +8,12 @@ import {
   resolveTarget,
   type RefRecord,
   type Repo,
-} from "@nref/core";
+} from "@interref/core";
 import * as vscode from "vscode";
 import type { Located, Repos } from "./repos.js";
 
-export const SOURCE = "nref";
-export const REVEAL_DIRECTORY = "nref.revealDirectory";
+export const SOURCE = "interref";
+export const REVEAL_DIRECTORY = "interref.revealDirectory";
 
 export interface Analysis extends Located {
   readonly records: readonly RefRecord[];
@@ -106,7 +106,7 @@ export class HoverProvider implements vscode.HoverProvider {
     if (record === undefined) return undefined;
 
     const markdown = new vscode.MarkdownString();
-    markdown.appendMarkdown("**nref** → ");
+    markdown.appendMarkdown("**interref** → ");
     markdown.appendText(targetLabel(record));
     if (record.target?.line !== undefined) markdown.appendText(` (line ${record.target.line})`);
     if (record.message !== undefined) {
@@ -115,7 +115,7 @@ export class HoverProvider implements vscode.HoverProvider {
     }
     markdown.supportThemeIcons = true;
 
-    const lines = vscode.workspace.getConfiguration("nref").get<number>("hover.lines", 10);
+    const lines = vscode.workspace.getConfiguration("interref").get<number>("hover.lines", 10);
     const target = record.target;
     if (target !== undefined && lines > 0) {
       if (target.kind === "directory") {
@@ -147,7 +147,7 @@ export class Diagnostics implements vscode.Disposable {
   constructor(private readonly repos: Repos) {}
 
   private enabled(): boolean {
-    return vscode.workspace.getConfiguration("nref").get<boolean>("diagnostics.enabled", true);
+    return vscode.workspace.getConfiguration("interref").get<boolean>("diagnostics.enabled", true);
   }
 
   /** Rechecks one document after `delay` ms; a newer request for it replaces this one. */

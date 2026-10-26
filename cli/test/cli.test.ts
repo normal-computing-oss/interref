@@ -6,7 +6,8 @@ import { dirname, join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
-const CLI = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "main.js");
+// Tests run the bundle that npm ships.
+const CLI = join(dirname(fileURLToPath(import.meta.url)), "..", "interref.mjs");
 
 let root = "";
 
@@ -22,7 +23,7 @@ before(() => {
     "docs/tokens.md": "## Tokens\n\n<!-- Implemented in nref:../src/session.ts -->\n",
     "src/session.ts": "// TTL must match nref:/docs/auth.md#token-lifetime\nexport const ttl = 15;\n",
     "src/pool.go": "// nref:./config.go and nref:/docs/auth.md#token-lifetimes\n",
-    "refs.toml": 'exclude = ["fixtures/**"]\n',
+    "interref.toml": 'exclude = ["fixtures/**"]\n',
     "fixtures/example.md": "nref:/does/not/exist\n",
   };
   for (const [path, content] of Object.entries(files)) {
@@ -35,7 +36,7 @@ before(() => {
 
 after(() => rmSync(root, { recursive: true, force: true }));
 
-describe("refs check", () => {
+describe("interref check", () => {
   it("reports broken refs and exits 1", () => {
     const { code, stdout } = refs("check");
     assert.equal(code, 1);
@@ -60,7 +61,7 @@ describe("refs check", () => {
   });
 });
 
-describe("refs links and backlinks", () => {
+describe("interref links and backlinks", () => {
   it("lists outgoing refs with their targets and context", () => {
     const { code, stdout } = refs("links", "src/session.ts", "-A", "1");
     assert.equal(code, 0);
@@ -90,7 +91,7 @@ describe("refs links and backlinks", () => {
     assert.match(mermaid, /^graph LR$/mu);
     assert.doesNotMatch(mermaid, /pool\.go/u);
     const xml = refs("graph", "--format", "drawio").stdout;
-    assert.match(xml, /^<mxfile host="refs">/u);
+    assert.match(xml, /^<mxfile host="interref">/u);
     assert.equal(xml.match(/vertex="1"/gu)?.length, 4);
     assert.equal(xml.match(/edge="1"/gu)?.length, 4);
     assert.match(xml, /dashed=1;strokeColor=#b85450;" edge="1"/u);

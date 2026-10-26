@@ -1,7 +1,7 @@
 /** One `Repo` snapshot per git root, rebuilt when files are added, removed or ignored. */
 
 import { dirname } from "node:path";
-import { findRepoRoot, readTextFromDisk, Repo } from "@nref/core";
+import { findRepoRoot, readTextFromDisk, Repo } from "@interref/core";
 import * as vscode from "vscode";
 
 export interface Located {
@@ -64,7 +64,7 @@ export class Repos implements vscode.Disposable {
           this.log.appendLine(`Cannot index ${root}: ${message}`);
           if (!this.reported.has(message)) {
             this.reported.add(message);
-            void vscode.window.showWarningMessage(`nref: ${message}`);
+            void vscode.window.showWarningMessage(`interref: ${message}`);
           }
           return undefined;
         },
@@ -74,7 +74,7 @@ export class Repos implements vscode.Disposable {
     return repo;
   }
 
-  /** Lists the files again (git ls-files) and rereads refs.toml. */
+  /** Lists the files again (git ls-files) and rereads interref.toml. */
   refresh(): void {
     this.repos.clear();
     this.loaded.clear();

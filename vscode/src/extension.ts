@@ -1,7 +1,7 @@
 /** Entry point: wires the providers, commands and file watchers. */
 
 import { basename } from "node:path";
-import { CONFIG_FILE, extractHeadings, formatRef, isMarkdownPath } from "@nref/core";
+import { CONFIG_FILE, extractHeadings, formatRef, isMarkdownPath } from "@interref/core";
 import * as vscode from "vscode";
 import { Completion, Diagnostics, HoverProvider, LinkProvider, QuickFixes, REVEAL_DIRECTORY } from "./features.js";
 import { showGraph } from "./graph.js";
@@ -13,7 +13,7 @@ const ALL_FILES: vscode.DocumentSelector = { scheme: "file" };
 const INDEX_FILES = new Set([".gitignore", CONFIG_FILE]);
 
 export function activate(context: vscode.ExtensionContext): void {
-  const log = vscode.window.createOutputChannel("nref");
+  const log = vscode.window.createOutputChannel("interref");
   const repos = new Repos(log);
   const diagnostics = new Diagnostics(repos);
   context.subscriptions.push(log, repos, diagnostics);
@@ -28,9 +28,9 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("nref.copyRef", (uri: unknown) => copyRef(repos, uri)),
-    vscode.commands.registerCommand("nref.showGraph", (uri: unknown) => showGraph(context, repos, uri)),
-    vscode.commands.registerCommand("nref.refresh", () => repos.refresh()),
+    vscode.commands.registerCommand("interref.copyRef", (uri: unknown) => copyRef(repos, uri)),
+    vscode.commands.registerCommand("interref.showGraph", (uri: unknown) => showGraph(context, repos, uri)),
+    vscode.commands.registerCommand("interref.refresh", () => repos.refresh()),
     vscode.commands.registerCommand(REVEAL_DIRECTORY, async (path: unknown) => {
       if (typeof path !== "string") return;
       await vscode.commands.executeCommand("revealInExplorer", vscode.Uri.file(path));
@@ -48,7 +48,7 @@ export function activate(context: vscode.ExtensionContext): void {
       if (isMarkdownPath(event.document.uri.fsPath)) repos.invalidate(event.document.uri);
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (!event.affectsConfiguration("nref")) return;
+      if (!event.affectsConfiguration("interref")) return;
       diagnostics.clear();
       diagnostics.scheduleAll(0);
     }),
@@ -82,7 +82,7 @@ async function copyRef(repos: Repos, argument: unknown): Promise<void> {
   if (uri === undefined) return;
   const located = await repos.locate(uri);
   if (located === undefined) {
-    void vscode.window.showWarningMessage("nref: this file is not in a git repo");
+    void vscode.window.showWarningMessage("interref: this file is not in a git repo");
     return;
   }
   const { repo, path } = located;

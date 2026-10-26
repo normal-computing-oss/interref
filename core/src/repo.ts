@@ -107,8 +107,8 @@ export class Repo {
   }
 
   /**
-   * Lists the files of the repo that contains `path`, with `git ls-files`, and reads `refs.toml`.
-   * Throws `ConfigError` when `refs.toml` is malformed.
+   * Lists the files of the repo that contains `path`, with `git ls-files`, and reads `interref.toml`.
+   * Throws `ConfigError` when `interref.toml` is malformed.
    */
   static async open(path: string, readText: TextReader = readTextFromDisk): Promise<Repo> {
     const root = await findRepoRoot(path);
@@ -121,7 +121,7 @@ export class Repo {
     return new Repo(root, splitNul(tracked), splitNul(untracked), readText, config);
   }
 
-  /** Whether `refs.toml` excludes `path` from scanning. */
+  /** Whether `interref.toml` excludes `path` from scanning. */
   isExcluded(path: string): boolean {
     return this.excluded(path);
   }
