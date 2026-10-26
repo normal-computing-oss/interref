@@ -2,6 +2,7 @@
   "name": "interref-workspace",
   "private": true,
   "description": "interref: a CLI and a VS Code extension for iref: cross-file links in comments",
+  "license": "Apache-2.0",
   "type": "module",
   "packageManager": "pnpm@12.11.2",
   "engines": {
@@ -13,7 +14,8 @@
     "test": "pnpm build && pnpm -r test",
     "check": "pnpm lint && pnpm test",
     "package": "pnpm build && pnpm --filter vscode-interref package",
-    "clean": "tsrs -b --clean && rm -rf packages/*/dist packages/vscode/*.vsix"
+    "clean": "tsrs -b --clean && rm -rf packages/*/dist packages/vscode/*.vsix",
+    "release": "node scripts/release.mjs"
   },
   "devDependencies": {
     "@types/node": "catalog:",

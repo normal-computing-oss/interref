@@ -1,7 +1,6 @@
 {
   "name": "interref",
   "version": "0.1.0",
-  "private": true,
   "description": "Check, list and graph iref: cross-file links written in comments",
   "keywords": [
     "links",
@@ -10,7 +9,14 @@
     "documentation",
     "lint"
   ],
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/normal-computing-oss/interref.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/normal-computing-oss/interref#readme",
+  "bugs": "https://github.com/normal-computing-oss/interref/issues",
   "type": "module",
   "bin": {
     "interref": "./dist/interref.mjs",
@@ -24,6 +30,7 @@
   },
   "scripts": {
     "bundle": "node esbuild.mjs",
+    "prepack": "cp ../../LICENSE .",
     "test": "node --test \"dist/test/**/*.test.js\""
   },
   "devDependencies": {

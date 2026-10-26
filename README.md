@@ -2,7 +2,7 @@
 
 interref makes `iref:` links checkable in CI and clickable in VS Code. You write an `iref:` link in
 a comment. It points from any file in a git repo to another file, directory or Markdown heading in
-the same repo. The design is in the "Proposal: Cross-File Reference System" doc (2026-10-19).
+the same repo.
 
 ```python
 # Token TTL must match the docs: iref:/docs/auth.md#token-lifetime
@@ -12,35 +12,28 @@ the same repo. The design is in the "Proposal: Cross-File Reference System" doc 
 <!-- Implemented in iref:../src/auth/session.ts -->
 ```
 
-| Folder             | Package            | Contents                                                                 |
-| ------------------ | ------------------ | ------------------------------------------------------------------------ |
-| `packages/core/`   | `@interref/core`   | Scanner, path resolution, Markdown headings, checks. Used by both tools. |
-| `packages/cli/`    | `interref`         | The command-line tool. Published to npm as `interref`.                   |
-| `packages/vscode/` | `vscode-interref`  | The VS Code extension.                                                   |
+When a file moves or a heading changes, `interref check` finds the refs that are now broken. In VS
+Code, you can Cmd/Ctrl+click a ref to open its target. The CLI and the extension use the same code,
+so they give the same result for the same ref.
 
-All three are TypeScript. The extension calls `core` directly, so the editor and the CLI give the
-same result for the same ref.
+## Install
 
-## Setup
-
-You need Node 22 or later and pnpm. The repo is a pnpm workspace. The `packageManager` field in
-`package.json` sets the pnpm version. Shared dependency versions are in the `catalog` of
-`pnpm-workspace.yaml`.
+The CLI needs Node 22 or later:
 
 ```sh
-pnpm install
-pnpm build           # tsrs for all packages, then esbuild bundles the CLI and the extension
-pnpm test            # build, then run the tests of all packages
-pnpm lint            # oxlint with type-aware rules; `any` is an error, written or inferred
+npm install --global interref    # installs two names for the same tool: `interref` and `iref`
+npx interref check               # or run it with no install
 ```
 
-The type checker is [tsrs](https://github.com/oxc-project/tsrs), a Rust port of TypeScript 7. Use
-`pnpm exec tsrs` where you would use `tsc`. The linter is [oxlint](https://oxc.rs/docs/guide/usage/linter);
-its rules are in `.oxlintrc.json`. tsrs is a beta, so its version is pinned exactly.
+For the VS Code extension, download `interref-<version>.vsix` from the
+[GitHub releases](https://github.com/normal-computing-oss/interref/releases), then install it:
 
-In VS Code, install the extensions that the workspace recommends: "TypeScript (Native Preview)" and
-"Oxc". `.vscode/settings.json` makes the TypeScript extension use the tsrs language server from
-`node_modules`. VS Code asks you to trust the workspace before it starts that server.
+```sh
+code --install-extension interref-0.2.0.vsix   # or: Extensions view > ... > Install from VSIX
+```
+
+The extension is not in the Marketplace. Cursor, Windsurf and VSCodium install a `.vsix` the same
+way.
 
 ## Syntax
 
@@ -81,32 +74,25 @@ punctuation, change each space to `-`, and add `-1`, `-2` to repeated headings. 
 
 Line fragments (`#L42`, `#L40-L72`) and anchors (`#^name`) are errors (`unsupported-fragment`).
 
-Note: the MkDocs site makes some heading ids differently from GitHub. For example, it merges
-repeated hyphens. Use the GitHub form. When a slug is wrong, `interref check` and the editor suggest
-the nearest correct slug.
+Note: some site generators, for example MkDocs, make heading ids differently from GitHub. MkDocs
+merges repeated hyphens. Use the GitHub form. When a slug is wrong, `interref check` and the editor
+suggest the nearest correct slug.
 
 ## CLI
 
 Run it from anywhere in the repo that you want to check:
 
-```sh
-node ~/workspace/interref/packages/cli/dist/interref.mjs check
-# or put `interref` on your PATH (run this in the interref repo; ~/.local/bin must be on PATH):
-ln -s "$PWD/packages/cli/dist/interref.mjs" ~/.local/bin/interref
-# `iref` is a short name for the same tool:
-ln -s "$PWD/packages/cli/dist/interref.mjs" ~/.local/bin/iref
+```console
+$ interref check
+src/auth/session.ts:3:5  error  iref:/docs/auth.md#tokn  no heading #tokn in docs/auth.md; did you mean #token? [missing-anchor]  (fix: iref:/docs/auth.md#token)
+1 broken ref (15 refs in 2160 files)
 ```
 
-The npm package installs both names, `interref` and `iref`.
-
-`pnpm build` writes the CLI and `@interref/core` into one file, `packages/cli/dist/interref.mjs`.
-That file is the whole npm package, so it has no dependencies at run time.
-
-| Command                           | Output                                                             |
-| --------------------------------- | ------------------------------------------------------------------ |
-| `interref check [<path>...]`          | Broken refs in the repo, or under the paths. Exit 1 if any.        |
-| `interref links <file> [--to <file>]` | Refs that a file holds and where each one goes.                    |
-| `interref backlinks <file>`           | Refs in the repo that point at a file or directory.                |
+| Command                               | Output                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------ |
+| `interref check [<path>...]`          | Broken refs in the repo, or under the paths. Exit 1 if any.              |
+| `interref links <file> [--to <file>]` | Refs that a file holds and where each one goes.                          |
+| `interref backlinks <file>`           | Refs in the repo that point at a file or directory.                      |
 | `interref graph [<file>]`             | The link graph: `--format dot` (default), `mermaid`, `json` or `drawio`. |
 
 | Option                    | Effect                                                                  |
@@ -125,10 +111,16 @@ column after the files that link to it. Files are blue boxes and directories are
 A red dashed arrow is a broken ref, and a number on an arrow counts the refs it stands for. With
 `interref graph <file>`, that file has a thick border.
 
-```console
-$ interref check
-src/auth/session.ts:3:5  error  iref:/docs/auth.md#tokn  no heading #tokn in docs/auth.md; did you mean #token? [missing-anchor]  (fix: iref:/docs/auth.md#token)
-1 broken ref (15 refs in 2160 files)
+### Use in CI
+
+`interref check` exits with 1 when a ref is broken, so a CI step fails. For GitHub Actions:
+
+```yaml
+- uses: actions/checkout@v5
+- uses: actions/setup-node@v5
+  with:
+    node-version: 22
+- run: npx --yes interref check
 ```
 
 ### Rules
@@ -140,7 +132,7 @@ src/auth/session.ts:3:5  error  iref:/docs/auth.md#tokn  no heading #tokn in doc
 | `unsupported-fragment` | error   | The fragment is `#L…` or `#^…`.                                   |
 | `escapes-root`         | error   | `..` climbs above the repo root.                                  |
 | `bare-path`            | error   | The path starts with none of `/`, `./`, `../`.                    |
-| `reserved-authority`   | error   | The ref uses `iref://` (or `iref://`, …), kept for cross-repo refs. |
+| `reserved-authority`   | error   | The ref uses `iref://` (or `sync://`, …), kept for cross-repo refs. |
 | `case-mismatch`        | error   | The path differs from a repo path only by case.                   |
 | `invalid-encoding`     | error   | The percent-encoding is bad.                                      |
 | `target-ignored`       | warn    | The target is untracked or ignored by git.                        |
@@ -177,15 +169,6 @@ an excluded file still resolve.
 
 ## VS Code extension
 
-Build and install it:
-
-```sh
-pnpm package                                   # makes packages/vscode/interref.vsix
-code --install-extension packages/vscode/interref.vsix
-```
-
-To debug it, open this repo in VS Code and start "Run interref extension" (F5).
-
 | Feature        | What you do                                                                          |
 | -------------- | ------------------------------------------------------------------------------------ |
 | Follow         | Cmd/Ctrl+click a ref. A file opens at the heading. A directory shows in the explorer. |
@@ -209,15 +192,22 @@ extension first. If it is missing, the command offers to install it.
 
 Each run writes the file again, so edits that you make to a graph file are lost on the next run.
 
+### File index
+
 The extension reads the file list from git. It reads it again when files are created or deleted,
 or when `.gitignore` or the config file changes. Run "interref: Refresh file index" after other changes,
 for example after `git add`. Headings come from the editor text, so they include unsaved edits.
 
-## Not done yet
+## Limitations
 
-- Line and anchor fragments, and the `duplicate-anchor`, `line-ref` and `stale-line` rules.
-- `interref mv`, `interref check --changed`, `--include`/`--exclude` flags, and the blob-hash cache.
-- `interref lsp`. Because the extension uses `core` directly, it does not need a language server.
-  Add one only if another editor needs one.
-- Backlinks panel and rename safety in the extension.
+- Only heading fragments work. Line fragments (`#L42`) and anchors (`#^name`) are not supported yet.
 - The graph preview does not update by itself. Run the command again after you change refs.
+- The extension has no backlinks panel, and it does not update refs when you rename a file.
+
+## Contributing
+
+To build, test or release interref, see [DEVELOPMENT.md](DEVELOPMENT.md).
+
+## License
+
+[Apache-2.0](LICENSE)

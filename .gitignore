@@ -2,3 +2,6 @@ node_modules/
 dist/
 *.tsbuildinfo
 *.vsix
+
+# Copied from the repo root when a package is packed.
+packages/*/LICENSE

@@ -5,7 +5,12 @@
   "version": "0.1.0",
   "publisher": "normal-computing",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/normal-computing-oss/interref.git",
+    "directory": "packages/vscode"
+  },
   "engines": {
     "vscode": "^1.100.0"
   },
@@ -102,7 +107,7 @@
   },
   "scripts": {
     "bundle": "node esbuild.mjs",
-    "package": "vsce package --no-dependencies --skip-license --allow-missing-repository --out interref.vsix"
+    "package": "cp ../../LICENSE . && vsce package --no-dependencies --out interref.vsix"
   },
   "devDependencies": {
     "@interref/core": "workspace:*",
