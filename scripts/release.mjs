@@ -8,7 +8,7 @@
 // GitHub release. If a step before the npm publish fails, the script undoes the commit and the tag.
 // If a step after the npm publish fails, the script shows the commands that are still to do.
 import { execFileSync } from "node:child_process";
-import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 
 /** @type {(message: string) => never} */
 const fail = (message) => {
@@ -63,7 +63,8 @@ const undo = () => {
 };
 
 try {
-  for (const file of readdirSync("packages").map((dir) => `packages/${dir}/package.json`)) {
+  // Only the manifests in git: packages/ can also hold files such as .DS_Store.
+  for (const file of output("git", "ls-files", "packages/*/package.json").split("\n")) {
     const manifest = /** @type {{ version: string }} */ (JSON.parse(readFileSync(file, "utf8")));
     manifest.version = version;
     writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -79,8 +80,9 @@ try {
   run("git", ["commit", "--quiet", "--all", "--message", `Release ${tag}`]);
   run("git", ["tag", "--annotate", tag, "--message", tag]);
   run("npm", ["publish", `./${tarball}`, "--tag", distTag, ...(dryRun ? ["--dry-run"] : [])]);
-} catch {
+} catch (error) {
   undo();
+  console.error(`\n${error instanceof Error ? error.message : String(error)}`);
   fail("a step failed, so nothing was published. The commit and the tag are undone.");
 }
 
