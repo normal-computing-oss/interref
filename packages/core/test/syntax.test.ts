@@ -59,16 +59,19 @@ describe("scanRefs", () => {
     assert.deepEqual(scan("iref:/a.ts nref:/b.ts.", ["nref"]), ["nref:/b.ts"]);
     assert.deepEqual(scan("iref:/a.ts ref:/b.ts", ["ref"]), ["ref:/b.ts"]);
     assert.deepEqual(scan("my.ref:/a.ts myxref:/b.ts", ["my.ref"]), ["my.ref:/a.ts"]);
-    assert.deepEqual(scan("<!--x+y:-->", ["x+y"]), ["x+y:"]);
+    assert.deepEqual(scan("<!--x+y:#a-->", ["x+y"]), ["x+y:#a"]);
   });
 
   it("does not match the escaped form", () => {
     assert.deepEqual(raws("write iref\\:/path to show the syntax"), []);
   });
 
-  it("keeps a lone prefix as a ref to the same file", () => {
-    assert.deepEqual(raws("the `iref:` prefix"), ["iref:"]);
-    assert.deepEqual(raws("ends with iref:"), ["iref:"]);
+  it("ignores a prefix with no path and no fragment", () => {
+    assert.deepEqual(raws("the `iref:` prefix"), []);
+    assert.deepEqual(raws("ends with iref:"), []);
+    assert.deepEqual(raws("# iref: "), []);
+    assert.deepEqual(raws("see iref:. and iref:#."), []);
+    assert.deepEqual(raws("iref:#intro"), ["iref:#intro"]);
   });
 });
 

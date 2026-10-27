@@ -23,7 +23,7 @@ export interface RefMatch {
   readonly start: number;
   /** Offset just after the last character of `raw`. */
   readonly end: number;
-  /** The path part, still percent-encoded. It can be empty. */
+  /** The path part, still percent-encoded. It is empty when the ref has only a fragment. */
   readonly path: string;
   /** The fragment without `#`, or undefined when the ref has no fragment. */
   readonly fragment: string | undefined;
@@ -61,6 +61,8 @@ export function scanRefs(text: string, protocols: readonly string[] = DEFAULT_PR
     const protocol = match[1] ?? "";
     const prefixLength = protocol.length + 1;
     const raw = trimRef(text, start, match[0], prefixLength);
+    // A prefix with no path and no fragment, such as `# iref: ` in Python, is not a ref.
+    if (raw.length === prefixLength) continue;
     const hash = raw.indexOf("#");
     refs.push({
       raw,
