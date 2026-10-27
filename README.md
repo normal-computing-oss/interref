@@ -21,7 +21,10 @@ so they give the same result for the same ref.
 The CLI needs Node 22 or later:
 
 ```sh
-npm install --global @normal-computing/interref   # installs two commands: `interref` and `iref`
+npm install --global @normal-computing/interref   # installs `interref` and its alias `iref`
+```
+
+```sh
 npx @normal-computing/interref check               # or run it with no install
 ```
 
