@@ -25,15 +25,26 @@ npm install --global @normal-computing/interref   # installs two commands: `inte
 npx @normal-computing/interref check               # or run it with no install
 ```
 
-For the VS Code extension, download `interref-<version>.vsix` from the
-[GitHub releases](https://github.com/normal-computing-oss/interref/releases), then install it:
+The VS Code extension is not in the Marketplace. The CLI installs it from the newest
+[GitHub release](https://github.com/normal-computing-oss/interref/releases):
 
 ```sh
-code --install-extension interref-0.2.0.vsix   # or: Extensions view > ... > Install from VSIX
+interref install-extension                   # install, or update to the newest stable release
+interref install-extension --check           # only tell if an update is available
+interref install-extension --prerelease      # also use prereleases
+interref install-extension --editor cursor   # Cursor, Windsurf (windsurf) or VSCodium (codium)
 ```
 
-The extension is not in the Marketplace. Cursor, Windsurf and VSCodium install a `.vsix` the same
-way.
+The command uses the `code` command of VS Code. If your shell does not find `code`, in VS Code run
+"Shell Command: Install 'code' command in PATH". You can also download the `.vsix` from a release
+and run `code --install-extension interref-<version>.vsix`.
+
+### Updates
+
+Once a day, the CLI asks npm if a newer stable version is available. If it is, the CLI tells you
+how to upgrade, after the output of the command. The CLI does not ask when its output does not go
+to a terminal or when the `CI` variable is set. To turn the check off, set
+`INTERREF_NO_UPDATE_CHECK=1`. `interref --version` asks npm immediately.
 
 ## Syntax
 
@@ -94,6 +105,7 @@ src/auth/session.ts:3:5  error  iref:/docs/auth.md#tokn  no heading #tokn in doc
 | `interref links <file> [--to <file>]` | Refs that a file holds and where each one goes.                          |
 | `interref backlinks <file>`           | Refs in the repo that point at a file or directory.                      |
 | `interref graph [<file>]`             | The link graph: `--format dot` (default), `mermaid`, `json` or `drawio`. |
+| `interref install-extension`          | Install or update the VS Code extension. See [Install](#install).        |
 
 | Option                    | Effect                                                                  |
 | ------------------------- | ----------------------------------------------------------------------- |
@@ -102,8 +114,9 @@ src/auth/session.ts:3:5  error  iref:/docs/auth.md#tokn  no heading #tokn in doc
 | `-C N`, `-A N`, `-B N`    | Show N lines around each ref, as `grep` does.                           |
 | `-T N`, `--show-target N` | Show N lines of the target, from the heading or from the top.           |
 | `--format F`              | `text`, `json`, `ndjson`; `check` also has `sarif`.                     |
+| `--version`               | Show the version, and ask npm if a newer stable version is available.   |
 
-Exit codes: 0 clean, 1 broken refs, 2 usage, git or config file error.
+Exit codes: 0 clean, 1 broken refs, 2 usage, git, config file, network or editor error.
 
 `interref graph --format drawio > refs.drawio` writes a file that draw.io (or the Draw.io Integration
 extension in VS Code) opens. The tool places the nodes itself, from left to right: a file is one

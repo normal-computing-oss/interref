@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, before, describe, it } from "node:test";
@@ -119,5 +119,27 @@ describe("usage errors", () => {
     } finally {
       rmSync(bin, { recursive: true, force: true });
     }
+  });
+});
+
+describe("interref --version and install-extension", () => {
+  const run = (...args: string[]): { code: number | null; stdout: string; stderr: string } => {
+    const env = { ...process.env, INTERREF_NO_UPDATE_CHECK: "1" };
+    const result = spawnSync(process.execPath, [CLI, ...args], { cwd: root, encoding: "utf8", env });
+    return { code: result.status, stdout: result.stdout, stderr: result.stderr };
+  };
+
+  it("prints the version from package.json", () => {
+    const manifest = JSON.parse(readFileSync(join(dirname(CLI), "..", "package.json"), "utf8")) as { version: string };
+    const { code, stdout, stderr } = run("--version");
+    assert.equal(code, 0);
+    assert.equal(stdout, `${manifest.version}\n`);
+    assert.equal(stderr, "");
+  });
+
+  it("exits 2 when the editor command does not exist", () => {
+    const { code, stderr } = run("install-extension", "--editor", "no-such-editor-command");
+    assert.equal(code, 2);
+    assert.match(stderr, /^interref: cannot run "no-such-editor-command"\./u);
   });
 });

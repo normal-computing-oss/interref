@@ -7,3 +7,4 @@ release/
 
 # Copied from the repo root when a package is packed.
 packages/*/LICENSE
+.DS_Store

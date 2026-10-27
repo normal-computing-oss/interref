@@ -40,7 +40,14 @@ In VS Code, install the extensions that the workspace recommends: "TypeScript (N
 ## CLI
 
 `pnpm build` writes the CLI and `@interref/core` into one file, `packages/cli/dist/interref.mjs`.
-That file is the whole npm package, so it has no dependencies at run time.
+That file is the whole npm package, so it has no dependencies at run time. esbuild also writes the
+version from `package.json` into the bundle, for `--version` and the update check.
+
+`packages/cli/src/update.ts` has the network code. The update check reads the `latest` dist-tag
+from npm and keeps the answer for a day in `~/.cache/interref/update-check.json` (or
+`$XDG_CACHE_HOME/interref/`). `install-extension` reads the GitHub releases and installs the
+`.vsix` asset with `<editor> --install-extension`. To test it without a change to your VS Code,
+use `--editor` with a script that runs `code --extensions-dir <temporary folder> "$@"`.
 
 To run your local build, use `node ~/workspace/interref/packages/cli/dist/interref.mjs check`, or
 link it onto your PATH (run this in the interref repo; `~/.local/bin` must be on PATH):

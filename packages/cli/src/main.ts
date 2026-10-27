@@ -25,6 +25,17 @@ import {
   type ContextOptions,
   type JsonValue,
 } from "./format.js";
+import {
+  compareVersions,
+  installedExtension,
+  installExtension,
+  latestExtensionRelease,
+  UpdateError,
+  updateCheckDisabled,
+  upgradeNotice,
+  VERSION,
+  versionReport,
+} from "./update.js";
 
 /** The name that the user typed: `iref` is a short name for `interref`. */
 const NAME = basename(process.argv[1] ?? "") === "iref" ? "iref" : "interref";
@@ -36,6 +47,7 @@ Commands:
   backlinks <file>             Refs in the repo that point at a file or directory
   check [<path>...]            Report broken refs in the repo or under the paths; exit 1 if any
   graph [<file>]               Export the link graph, whole repo or around one file (> x.drawio)
+  install-extension            Install or update the VS Code extension from the newest GitHub release
 
 Options:
   -r, --recursive              Follow refs transitively (links, backlinks)
@@ -43,9 +55,14 @@ Options:
   -C N, -A N, -B N             Show N lines of context around each ref where it is written
   -T N, --show-target N        Show N lines of the target, from the heading or the top
       --format F               text | json | ndjson, plus sarif for check; dot | mermaid | json | drawio for graph
+      --editor CMD             install-extension: the editor's command (default code; also cursor, windsurf, codium)
+      --prerelease             install-extension: also use prereleases
+      --check                  install-extension: only tell if an update is available
   -h, --help                   Show this help
+      --version                Show the version, and ask npm if a newer one is available
 
-Paths in output are relative to the repo root. Exit codes: 0 clean, 1 broken refs, 2 usage error.
+Paths in output are relative to the repo root. Exit codes: 0 clean, 1 broken refs, 2 usage or other error.
+Once a day, the CLI asks npm for a newer stable version. INTERREF_NO_UPDATE_CHECK=1 turns this off.
 A ref starts with a protocol name from the config file: iref: or sync: by default.
 Only heading fragments (#some-heading) are supported for now. iref is a short name for interref.`;
 
@@ -60,7 +77,11 @@ const OPTIONS = {
   "show-target": { type: "string", short: "T" },
   format: { type: "string" },
   to: { type: "string" },
+  editor: { type: "string" },
+  prerelease: { type: "boolean" },
+  check: { type: "boolean" },
   help: { type: "boolean", short: "h" },
+  version: { type: "boolean" },
 } as const;
 
 type Values = ReturnType<typeof parseArgs<{ options: typeof OPTIONS; allowPositionals: true }>>["values"];
@@ -245,6 +266,28 @@ function commandGraph(repo: Repo, values: Values, positionals: readonly string[]
   return 0;
 }
 
+async function commandInstallExtension(values: Values, positionals: readonly string[]): Promise<number> {
+  if (positionals.length > 0) throw new UsageError("install-extension takes no arguments");
+  const editor = values.editor ?? "code";
+  const installed = installedExtension(editor);
+  const release = await latestExtensionRelease(values.prerelease === true);
+  const current = installed === undefined ? "is not installed" : `${installed} is installed`;
+  const upToDate = installed !== undefined && compareVersions(installed, release.version) >= 0;
+  if (values.check === true) {
+    const verdict = upToDate ? "No update is necessary." : `Run ${NAME} install-extension${values.prerelease === true ? " --prerelease" : ""} to install it.`;
+    console.log(`The interref extension ${current} in ${editor}. The newest release is ${release.version}. ${verdict}`);
+    return 0;
+  }
+  if (upToDate) {
+    console.log(`The interref extension ${installed} is installed in ${editor}. It is the newest release.`);
+    return 0;
+  }
+  console.log(`Installing the interref extension ${release.version} in ${editor}...`);
+  await installExtension(editor, release);
+  console.log(`Installed. If ${editor} is open, reload its window to use ${release.version}.`);
+  return 0;
+}
+
 const COMMANDS: Readonly<Record<string, (repo: Repo, values: Values, positionals: readonly string[]) => number>> = {
   links: commandLinks,
   backlinks: commandBacklinks,
@@ -261,21 +304,31 @@ async function main(argv: readonly string[]): Promise<number> {
   }
   const { values, positionals } = parsed;
   const [command, ...rest] = positionals;
+  if (values.version === true) {
+    console.log(VERSION);
+    if (!updateCheckDisabled(process.env)) {
+      console.error(await versionReport(NAME).catch((error: unknown) => `Cannot ask npm for a newer version: ${String(error)}`));
+    }
+    return 0;
+  }
   if (values.help === true || command === undefined) {
     console.log(USAGE);
     return command === undefined && values.help !== true ? 2 : 0;
   }
+  if (command === "install-extension") return commandInstallExtension(values, rest);
   const run = COMMANDS[command];
   if (run === undefined) throw new UsageError(`unknown command "${command}"`);
   return run(await Repo.open(process.cwd()), values, rest);
 }
 
 main(process.argv.slice(2)).then(
-  (code) => {
+  async (code) => {
     process.exitCode = code;
+    const notice = await upgradeNotice(NAME);
+    if (notice !== undefined) console.error(`\n${notice}`);
   },
   (error: unknown) => {
-    if (error instanceof UsageError || error instanceof GitError || error instanceof ConfigError) {
+    if (error instanceof UsageError || error instanceof GitError || error instanceof ConfigError || error instanceof UpdateError) {
       console.error(`${NAME}: ${error.message}`);
       if (error instanceof UsageError) console.error(`Run ${NAME} --help for usage.`);
       process.exitCode = 2;
