@@ -2,7 +2,7 @@
   "name": "vscode-interref",
   "displayName": "interref",
   "description": "Follow, preview, check and graph iref: cross-file links in comments",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "normal-computing",
   "private": true,
   "license": "Apache-2.0",
