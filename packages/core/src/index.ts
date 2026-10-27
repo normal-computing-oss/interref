@@ -1,3 +1,5 @@
+export { commentSpans, findRefs } from "./comments.js";
+export type { Span } from "./comments.js";
 export { checkRef, checkText, editDistance, scanRepo, similarPaths } from "./check.js";
 export type { RefRecord, RepoScan, ResolvedTarget, Status } from "./check.js";
 export { CONFIG_FILES, ConfigError, DEFAULT_CONFIG, excluder, globToRegExp, loadConfig, parseConfig } from "./config.js";

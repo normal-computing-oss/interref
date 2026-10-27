@@ -26,7 +26,9 @@ describe("checkText", () => {
   });
   after(() => fixture.dispose());
 
-  const check = (source: string, text: string) => checkText(repo, source, text);
+  // Only refs in comments count, so each test text goes in a comment of the source's language.
+  const check = (source: string, text: string) =>
+    checkText(repo, source, source.endsWith(".md") ? `<!-- ${text} -->` : `// ${text}`);
   const only = (source: string, text: string) => {
     const [record] = check(source, text);
     assert.ok(record);
@@ -42,7 +44,7 @@ describe("checkText", () => {
       fragment: { kind: "heading", slug: "token-lifetime" },
       line: 3,
     });
-    assert.deepEqual(record.source, { path: "src/auth/session.ts", line: 1, col: 3 });
+    assert.deepEqual(record.source, { path: "src/auth/session.ts", line: 1, col: 6 });
     assert.equal(only("docs/auth.md", "iref:../src/").target?.kind, "directory");
     assert.equal(only("docs/auth.md", "iref:/").target?.path, "");
     assert.equal(only("docs/auth.md", "iref:#auth").status, "ok");
@@ -101,6 +103,23 @@ describe("checkText", () => {
 
   it("requires a directory after a trailing slash", () => {
     assert.equal(only("docs/a.md", "iref:/docs/auth.md/").rule, "missing-file");
+  });
+
+  it("finds refs only in comments", () => {
+    const text = [
+      "// see iref:/docs/auth.md",
+      'const example = "iref:/no/such/file";',
+      "/* and iref:./config.go */ const next = `iref:/no/such/file`;",
+    ].join("\n");
+    assert.deepEqual(
+      checkText(repo, "src/db/pool.go", text).map((record) => [record.raw, record.source.line, record.status]),
+      [
+        ["iref:/docs/auth.md", 1, "ok"],
+        ["iref:./config.go", 3, "ok"],
+      ],
+    );
+    assert.deepEqual(checkText(repo, "docs/a.md", "Text iref:/no/such/file and `<!-- iref:/no/such/file -->`"), []);
+    assert.deepEqual(checkText(repo, "notes.txt", "iref:/no/such/file"), []);
   });
 });
 

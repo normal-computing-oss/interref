@@ -3,6 +3,8 @@
  * from the config. The pattern is the one in the proposal, with two changes: "no letter, digit, `_`
  * or `-` before the ref" uses Unicode classes rather than ASCII `\w`, and `<!--` right before the ref
  * is allowed, so that `<!--iref:./a.md-->` matches as the proposal's example says.
+ *
+ * `scanRefs` looks at all of the text. `findRefs` in `comments.ts` uses it on comments only.
  */
 
 /** The protocol names that start a ref when the config does not set `protocols`. */

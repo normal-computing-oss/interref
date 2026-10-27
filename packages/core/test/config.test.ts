@@ -100,10 +100,10 @@ describe("rule settings", () => {
       exclude: ["skip/**"],
       rules: { "missing-file": "warn", "bare-path": "off" },
     });
-    const [missing, bare] = checkText(repo, "a.md", "iref:/b.md iref:b.md");
+    const [missing, bare] = checkText(repo, "a.md", "<!-- iref:/b.md iref:b.md -->");
     assert.equal(missing?.status, "warn");
     assert.equal(bare?.status, "ok");
     assert.equal(bare?.rule, undefined);
-    assert.deepEqual(checkText(repo, "skip/x.md", "iref:/b.md"), []);
+    assert.deepEqual(checkText(repo, "skip/x.md", "<!-- iref:/b.md -->"), []);
   });
 });

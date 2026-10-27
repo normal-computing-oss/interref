@@ -1,6 +1,7 @@
 /** Checks refs against a repo snapshot and gives each one a status. */
 
 import { posix } from "node:path";
+import { findRefs } from "./comments.js";
 import { isMarkdownPath } from "./markdown.js";
 import type { EntryKind, Repo } from "./repo.js";
 import {
@@ -11,7 +12,7 @@ import {
   type HeadingFragment,
   type RuleId,
 } from "./resolve.js";
-import { LineIndex, scanRefs, type RefMatch } from "./syntax.js";
+import { LineIndex, type RefMatch } from "./syntax.js";
 
 export type Status = "ok" | "warn" | "error";
 
@@ -166,10 +167,13 @@ export function checkRef(repo: Repo, source: string, match: RefMatch, lines: Lin
   return { ...base, target, status: "ok", suggestions: [] };
 }
 
-/** Scans and checks every ref in one file. A file that the config excludes has none. */
+/**
+ * Scans and checks every ref in the comments of one file. A file that the config excludes, or
+ * whose language is not known, has none.
+ */
 export function checkText(repo: Repo, source: string, text: string): RefRecord[] {
   if (repo.isExcluded(source)) return [];
-  const matches = scanRefs(text, repo.config.protocols);
+  const matches = findRefs(source, text, repo.config.protocols);
   if (matches.length === 0) return [];
   const lines = new LineIndex(text);
   return matches.map((match) => checkRef(repo, source, match, lines));

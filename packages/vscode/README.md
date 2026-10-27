@@ -6,7 +6,7 @@ This extension makes `iref:` links in comments clickable, and it shows broken li
 - Hover over a ref to see the start of its target.
 - Broken refs show in Problems. Cmd/Ctrl+. offers fixes.
 - "Copy ref" in the editor or explorer context menu copies `iref:/path#heading`.
-- Type `iref:/`, `iref:./` or `#` to get completions for paths and headings. `iref:`, `sync:` and the
+- In a comment, type `iref:/`, `iref:./` or `#` to get completions for paths and headings. `iref:`, `sync:` and the
   other protocols in the config file work the same way.
 - "interref: Show ref graph" opens the link graph around a file, or for the whole repo. You must
   install a viewer extension first: Draw.io Integration (`hediet.vscode-drawio`, the default), or
@@ -14,7 +14,8 @@ This extension makes `iref:` links in comments clickable, and it shows broken li
   Preview (`vstirbu.vscode-mermaid-preview`). If the viewer is missing, the command offers to
   install it.
 
-Only heading fragments are supported for now. For the full syntax and the `interref` CLI, see the
+A ref counts only in a comment, not in a string or in Markdown text. Only heading fragments are
+supported for now. For the full syntax and the `interref` CLI, see the
 `README.md` of the interref repo.
 
 ## Settings

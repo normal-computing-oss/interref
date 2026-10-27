@@ -67,7 +67,44 @@ iref:#heading-in-this-file
 - Percent-encode spaces, `#` and `%` in paths (`%20`, `%23`, `%25`).
 - The ref ends at whitespace, a quote, a backtick or a bracket. A trailing `-->`, `*/` or
   `. , ; : ! ?` is not part of it.
-- Write `iref\:` to show the syntax in text without making a ref.
+- Write `iref\:` to show the syntax in a comment without making a ref.
+
+### Where a ref counts
+
+A ref counts only in a comment. interref ignores the same text in a string, in code, in Markdown
+text and in a code block. Thus an example in a test string or in a README is not a link:
+
+```python
+# iref:/docs/auth.md          <- a ref
+url = "iref:/docs/auth.md"    # not a ref: it is in a string
+```
+
+- In Markdown, a ref counts in an HTML comment (`<!-- ... -->`) or in a YAML comment in the front
+  matter. It does not count in text, in a code span or in a fenced code block.
+- In HTML, Vue and Svelte, a ref counts in an HTML comment, and in a comment in `<script>` and
+  `<style>`.
+- In Python, a docstring is a comment: a string that is a statement of its own, for example the
+  first line of a `def` or `class` body. An f-string is not a docstring.
+- In GraphQL, a `"""` description is a comment.
+- In JSON, a ref counts in a `//` or `/* */` comment (as in `tsconfig.json`).
+
+interref finds the language from the file extension or the file name (for example `Dockerfile`,
+`Makefile`, `CMakeLists.txt`). A file with no extension can name its language in a `#!` line. A file
+in a language that interref does not know, for example `.txt`, has no refs.
+
+| Comment syntax                    | Languages (examples)                                                      |
+| --------------------------------- | ------------------------------------------------------------------------- |
+| `//` and `/* */`                  | C, C++, C#, Java, Kotlin, Scala, Go, Rust, Swift, Dart, JavaScript, TypeScript, Zig, Solidity, Protobuf, JSON |
+| `#`                               | Python, Ruby, Perl, shell, PowerShell, R, Julia, Elixir, Nim, YAML, TOML, Makefile, Dockerfile, Terraform, Nix, GraphQL |
+| `--`                              | SQL, Lua, Haskell, Elm, VHDL, Lean                                        |
+| `;`, `%`, `!`, `'`                | Lisp, Clojure, assembly, INI; Erlang, LaTeX, MATLAB; Fortran; Visual Basic |
+| `(* *)`, `{- -}`                  | OCaml, F#, Pascal; Haskell                                                |
+| `<!-- -->`                        | Markdown, HTML, XML, SVG, Vue, Svelte                                     |
+| Other                             | reStructuredText (`..`), AsciiDoc (`//`), Org (`#`), Batch (`REM`), Vim script (`"`), Jinja and Twig (`{# #}`), Handlebars (`{{! }}`), ERB and EJS (`<%# %>`) |
+
+The scanner is a lexer, not a parser. It knows strings, raw strings, heredocs and template
+literals well enough to tell them from comments. In rare cases it can make an error, for example
+with a JavaScript regex after an unusual token.
 
 ### Protocols
 
@@ -192,7 +229,7 @@ an excluded file still resolve.
 | Problems       | Broken refs get a red or yellow underline (`interref.diagnostics.enabled`).              |
 | Quick fix      | Cmd/Ctrl+. on a broken ref offers the suggested refs.                                |
 | Copy ref       | Right-click in an editor or the explorer. Copies `iref:/path`, plus `#slug` of the heading above the cursor in Markdown. |
-| Completion     | Type `iref:/` or `iref:./` for paths, and `#` after a Markdown path for headings.    |
+| Completion     | In a comment, type `iref:/` or `iref:./` for paths, and `#` after a Markdown path for headings. |
 | Graph          | "interref: Show ref graph" (command palette, editor or explorer context menu). Pick 1 or 2 hops around the file, or the whole repo. |
 
 ### Graph preview

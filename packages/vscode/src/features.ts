@@ -3,6 +3,7 @@
 import { extname } from "node:path";
 import {
   checkText,
+  commentSpans,
   encodeRefPath,
   isMarkdownPath,
   protocolPattern,
@@ -264,6 +265,10 @@ export class Completion implements vscode.CompletionItemProvider {
     const { repo, path: source } = located;
     const partial = partialRef(repo.config.protocols).exec(before);
     if (partial === null) return undefined;
+    // Only a ref in a comment counts, so offer nothing in code, strings or Markdown text.
+    const offset = document.offsetAt(position);
+    const comments = commentSpans(source, document.getText()) ?? [];
+    if (!comments.some((span) => span.start < offset && offset <= span.end)) return undefined;
     const typedPath = partial[2] ?? "";
     const typedFragment = partial[3];
 

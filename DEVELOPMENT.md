@@ -7,7 +7,7 @@ design is in the "Proposal: Cross-File Reference System" doc (2026-10-19).
 
 | Folder             | Package                      | Contents                                                                 |
 | ------------------ | ---------------------------- | ------------------------------------------------------------------------ |
-| `packages/core/`   | `@interref/core`             | Scanner, path resolution, Markdown headings, checks. Used by both tools. |
+| `packages/core/`   | `@interref/core`             | Comment lexer, scanner, path resolution, Markdown headings, checks. Used by both tools. |
 | `packages/cli/`    | `@normal-computing/interref` | The command-line tool. Its commands are `interref` and `iref`.           |
 | `packages/vscode/` | `vscode-interref`            | The VS Code extension. Attached to each GitHub release as a `.vsix`.     |
 
@@ -36,6 +36,29 @@ its rules are in `.oxlintrc.json`. tsrs is a beta, so its version is pinned exac
 In VS Code, install the extensions that the workspace recommends: "TypeScript (Native Preview)" and
 "Oxc". `.vscode/settings.json` makes the TypeScript extension use the tsrs language server from
 `node_modules`. VS Code asks you to trust the workspace before it starts that server.
+
+## Comment lexer
+
+`packages/core/src/comments.ts` finds the comments of a file, and `checkText` keeps only the refs in
+them. Each language is a list of token rules: comments, and the strings and other spans in which a
+comment marker does not start a comment. To add a language, add an entry to `EXTENSIONS` or
+`NAMES`, and reuse a language that has the same rules or make one with `language(...)`. Add a test
+to `packages/core/test/comments.test.ts` with a ref in a comment and a ref in a string.
+
+To check the lexer on real code, compare it with Shiki, which has the TextMate grammars of VS Code.
+Shiki is a dev dependency only: it is not in the CLI or the extension.
+
+```sh
+pnpm verify-comments                       # the files of this repo
+pnpm verify-comments ~/src/repo-a ~/src/b  # other git repos
+pnpm verify-comments ~/src/a --lang python,rust --show 50
+```
+
+`scripts/verify-comments.mjs` marks each character as comment or not, by our lexer and by Shiki,
+and shows the regions where they disagree. It exits 1 if there are any. A grammar can be wrong too,
+so read each region before you change the lexer. Known differences by design (docstrings, code
+blocks in Markdown) and known grammar gaps are at the top of the script. Run it after you change
+the lexer, on repos that use the languages you changed.
 
 ## CLI
 
