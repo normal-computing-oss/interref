@@ -31,10 +31,8 @@ import {
   installExtension,
   latestExtensionRelease,
   UpdateError,
-  updateCheckDisabled,
   upgradeNotice,
   VERSION,
-  versionReport,
 } from "./update.js";
 
 /** The name that the user typed: `iref` is a short name for `interref`. */
@@ -59,7 +57,7 @@ Options:
       --prerelease             install-extension: also use prereleases
       --check                  install-extension: only tell if an update is available
   -h, --help                   Show this help
-      --version                Show the version, and ask npm if a newer one is available
+  -v, --version                Show the version
 
 Paths in output are relative to the repo root. Exit codes: 0 clean, 1 broken refs, 2 usage or other error.
 Once a day, the CLI asks npm for a newer stable version. INTERREF_NO_UPDATE_CHECK=1 turns this off.
@@ -81,7 +79,7 @@ const OPTIONS = {
   prerelease: { type: "boolean" },
   check: { type: "boolean" },
   help: { type: "boolean", short: "h" },
-  version: { type: "boolean" },
+  version: { type: "boolean", short: "v" },
 } as const;
 
 type Values = ReturnType<typeof parseArgs<{ options: typeof OPTIONS; allowPositionals: true }>>["values"];
@@ -306,9 +304,6 @@ async function main(argv: readonly string[]): Promise<number> {
   const [command, ...rest] = positionals;
   if (values.version === true) {
     console.log(VERSION);
-    if (!updateCheckDisabled(process.env)) {
-      console.error(await versionReport(NAME).catch((error: unknown) => `Cannot ask npm for a newer version: ${String(error)}`));
-    }
     return 0;
   }
   if (values.help === true || command === undefined) {

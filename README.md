@@ -44,7 +44,7 @@ and run `code --install-extension interref-<version>.vsix`.
 Once a day, the CLI asks npm if a newer stable version is available. If it is, the CLI tells you
 how to upgrade, after the output of the command. The CLI does not ask when its output does not go
 to a terminal or when the `CI` variable is set. To turn the check off, set
-`INTERREF_NO_UPDATE_CHECK=1`. `interref --version` asks npm immediately.
+`INTERREF_NO_UPDATE_CHECK=1`.
 
 ## Syntax
 
@@ -114,7 +114,7 @@ src/auth/session.ts:3:5  error  iref:/docs/auth.md#tokn  no heading #tokn in doc
 | `-C N`, `-A N`, `-B N`    | Show N lines around each ref, as `grep` does.                           |
 | `-T N`, `--show-target N` | Show N lines of the target, from the heading or from the top.           |
 | `--format F`              | `text`, `json`, `ndjson`; `check` also has `sarif`.                     |
-| `--version`               | Show the version, and ask npm if a newer stable version is available.   |
+| `-v`, `--version`         | Show the version.                                                       |
 
 Exit codes: 0 clean, 1 broken refs, 2 usage, git, config file, network or editor error.
 

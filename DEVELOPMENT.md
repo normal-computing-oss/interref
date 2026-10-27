@@ -41,7 +41,9 @@ In VS Code, install the extensions that the workspace recommends: "TypeScript (N
 
 `pnpm build` writes the CLI and `@interref/core` into one file, `packages/cli/dist/interref.mjs`.
 That file is the whole npm package, so it has no dependencies at run time. esbuild also writes the
-version from `package.json` into the bundle, for `--version` and the update check.
+version from `package.json` into the bundle, for `--version` and the update check. `prepack` copies
+the repo README and LICENSE into `packages/cli`, so the npm page shows the README.
+`scripts/npm-readme.mjs` changes the relative links in the copy to GitHub URLs.
 
 `packages/cli/src/update.ts` has the network code. The update check reads the `latest` dist-tag
 from npm and keeps the answer for a day in `~/.cache/interref/update-check.json` (or

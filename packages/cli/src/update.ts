@@ -127,13 +127,6 @@ export async function upgradeNotice(name: string): Promise<string | undefined> {
   return upgradeMessage(name, VERSION, latest);
 }
 
-/** For `--version`: asks npm now, whatever the cache says. */
-export async function versionReport(name: string): Promise<string> {
-  const latest = await latestOnNpm(REQUEST_TIMEOUT_MS);
-  if (latest !== undefined) writeCache({ checkedAt: Date.now(), latest });
-  return upgradeMessage(name, VERSION, latest) ?? `npm has no newer stable version of ${name}.`;
-}
-
 interface Release {
   version: string;
   vsix: { name: string; url: string };

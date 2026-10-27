@@ -131,10 +131,12 @@ describe("interref --version and install-extension", () => {
 
   it("prints the version from package.json", () => {
     const manifest = JSON.parse(readFileSync(join(dirname(CLI), "..", "package.json"), "utf8")) as { version: string };
-    const { code, stdout, stderr } = run("--version");
-    assert.equal(code, 0);
-    assert.equal(stdout, `${manifest.version}\n`);
-    assert.equal(stderr, "");
+    for (const flag of ["--version", "-v"]) {
+      const { code, stdout, stderr } = run(flag);
+      assert.equal(code, 0);
+      assert.equal(stdout, `${manifest.version}\n`);
+      assert.equal(stderr, "");
+    }
   });
 
   it("exits 2 when the editor command does not exist", () => {

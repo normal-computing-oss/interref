@@ -7,4 +7,6 @@ release/
 
 # Copied from the repo root when a package is packed.
 packages/*/LICENSE
+# Copied from the repo README when the CLI is packed. packages/vscode/README.md is its own file.
+packages/cli/README.md
 .DS_Store

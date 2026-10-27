@@ -33,7 +33,7 @@
   },
   "scripts": {
     "bundle": "node esbuild.mjs",
-    "prepack": "cp ../../LICENSE .",
+    "prepack": "cp ../../LICENSE . && node ../../scripts/npm-readme.mjs",
     "test": "node --test \"dist/test/**/*.test.js\""
   },
   "devDependencies": {
