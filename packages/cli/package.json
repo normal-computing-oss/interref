@@ -1,6 +1,6 @@
 {
   "name": "@normal-computing/interref",
-  "version": "0.2.0-beta.3",
+  "version": "0.2.0",
   "description": "Check, list and graph iref: cross-file links written in comments",
   "keywords": [
     "links",
