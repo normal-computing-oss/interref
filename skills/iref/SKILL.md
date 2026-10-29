@@ -110,9 +110,10 @@ repo root.
 | Command | Use |
 |---|---|
 | `iref check [<path>...]` | Find broken refs. Exit 1 if there is one. Each error tells the rule and, if possible, a fix. |
-| `iref links <file>` | Show the refs in a file and their targets. |
+| `iref links <file>...` | Show the refs in the files and their targets. Exit 1 if one is broken. |
 | `iref links <file> --to <file>` | Show only the refs that reach the second file. Add `-r` to see each chain. |
-| `iref backlinks <file-or-dir>` | Show the refs in the repo that point to the file or directory. Give a path without `#fragment`. |
+| `iref backlinks <path>...` | Show the refs in the repo that point to the files or directories. Exit 1 if one is broken. Give a path without `#fragment`. |
+| `... \| iref links -` | Read the paths from stdin, one on each line or NUL-separated. Also for `backlinks` and `check`. A path from stdin that does not exist is not an error. |
 | `iref graph [<file>] --format mermaid` | Show the link graph. Other formats: `dot` (default), `json`, `drawio`. |
 
 Useful options: `-r` (follow refs transitively), `--depth N`, `-C N` (show
@@ -155,53 +156,50 @@ lines around each ref), `-T N` (show the first N lines of the target),
 ### Check a set of changes for inconsistency
 
 Use this procedure to review a branch, a pull request or uncommitted changes.
-It finds broken refs, and `sync:` links where one side changed and the other
-side possibly did not.
+It finds the broken refs in or to the changed files, and the `sync:` links
+where one side changed and the other side possibly did not.
 
-1. Get the list of changed files. Compare with the merge base, so that the list
-   has both the commits and the uncommitted changes. `--no-renames` keeps the
-   old path of a moved file in the list. `git diff` does not show new files
-   that git does not track, so `git ls-files --others` adds them.
+git lists the changed files, and iref reads the list from stdin (`-`). The
+`changed` function lists the files that changed since the merge base: the
+commits, the uncommitted changes and the new untracked files. `--no-renames`
+keeps the old path of a moved file, so the refs to the old path show. For a
+branch or a pull request, use its base branch, for example `origin/main`. For
+only the uncommitted changes, use `HEAD` in place of the merge base. Each shell
+call is new, so define `changed` in the same call as the commands that use it.
 
-   ```sh
-   cd "$(git rev-parse --show-toplevel)"
-   base=$(git merge-base origin/main HEAD)   # or the base of the pull request
-   { git diff --name-only --no-renames "$base"; git ls-files --others --exclude-standard; } | sort -u
-   ```
+```sh
+cd "$(git rev-parse --show-toplevel)"
+changed() { git diff -z --name-only --no-renames "$(git merge-base origin/main HEAD)"; git ls-files -z --others --exclude-standard; }
+changed | iref links -       # refs in the changed files: the source changed
+changed | iref backlinks -   # refs to the changed files: the target changed
+```
 
-2. Run `iref check` with no paths. An error comes from the change if the file
-   that holds the ref, or its target, is in the list. Other errors were there
-   before the change. Report them separately, and do not fix them unless the
-   user asks.
-3. List the `sync:` links of the changed files. Each output line is one link:
-   the file and line of the ref, and then the ref. This takes about 0.3 seconds
-   for each changed file.
-
-   ```sh
-   { git diff --name-only --no-renames "$base"; git ls-files --others --exclude-standard; } |
-   while read -r f; do
-     [ -e "$f" ] || continue
-     iref links "$f"; iref backlinks "$f"
-   done | awk '$2 ~ /^sync:/ {print $1, $2}' | sort -u
-   ```
-
+1. Run the two commands. Each one exits 1 if a ref that it lists is broken.
+   Fix the broken refs. `iref check` with no paths shows all problems, also the
+   ones that were there before the change. Do not fix those unless the user
+   asks.
+2. Keep only the `sync:` links: add `| grep '  sync:'` to each command. A line
+   that is in the output of both commands is a link where both sides changed:
+   `{ changed | iref links -; changed | iref backlinks -; } | sort | uniq -d`.
    If the config file adds protocols, find out what they mean. Add each one
-   that means "change together" to the `awk` pattern, for example
-   `/^(sync|spec):/`.
-4. For each link, find the two sides: the file that holds the ref and the
-   target. If the ref has a heading, only that section of the target counts. A
-   change in a different section does not affect the link.
-   - If one side changed, read its diff (`git diff "$base" -- <file>`, or the
-     whole file if it is new). Then read the other side. `iref links <file> -T 40` shows the start of each
-     target section. Decide if the change makes the other side wrong.
+   that means "change together" to the pattern, for example
+   `grep -E '  (sync|spec):'`.
+3. For each link, read the two sides. If the ref has a heading, only that
+   section of the target counts. A change in a different section does not
+   affect the link.
+   - If one side changed, read its diff
+     (`git diff "$(git merge-base origin/main HEAD)" -- <file>`), or the whole
+     file if it is new. Then read the other side. Add `-T 40` to the commands
+     to see the start of each target section. Decide if the change makes the
+     other side wrong.
    - If both sides changed, read both diffs and make sure that they agree.
    - A change that keeps the meaning needs no change on the other side. For
      example: new wording, new formatting, or a typed value replaced by a
      generated value.
-5. Do the same for an `iref:` link only when the change removes or changes
+4. Do the same for an `iref:` link only when the change removes or changes
    something that the other file depends on. For example, a test that checks a
    rule that the change removed.
-6. Report each link in one of three groups: agrees, must change (tell what to
+5. Report each link in one of three groups: agrees, must change (tell what to
    change), or not sure (tell why).
 
 ### Find the code for a spec section

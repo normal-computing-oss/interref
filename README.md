@@ -142,8 +142,8 @@ src/auth/session.ts:3:5  error  iref:/docs/auth.md#tokn  no heading #tokn in doc
 | Command                               | Output                                                                   |
 | ------------------------------------- | ------------------------------------------------------------------------ |
 | `interref check [<path>...]`          | Broken refs in the repo, or under the paths. Exit 1 if any.              |
-| `interref links <file> [--to <file>]` | Refs that a file holds and where each one goes.                          |
-| `interref backlinks <file>`           | Refs in the repo that point at a file or directory.                      |
+| `interref links <file>... [--to <file>]` | Refs that the files hold and where each one goes.                     |
+| `interref backlinks <path>...`        | Refs in the repo that point at the files or directories.                 |
 | `interref graph [<file>]`             | The link graph: `--format dot` (default), `mermaid`, `json` or `drawio`. |
 | `interref install-extension`          | Install or update the VS Code extension. See [Install](#install).        |
 
@@ -157,7 +157,29 @@ src/auth/session.ts:3:5  error  iref:/docs/auth.md#tokn  no heading #tokn in doc
 | `--guide`                 | Print the guide for coding agents. See [Coding agents](#coding-agents). |
 | `-v`, `--version`         | Show the version.                                                       |
 
-Exit codes: 0 clean, 1 broken refs, 2 usage, git, config file, network or editor error.
+Exit codes: 0 clean, 1 broken refs, 2 usage, git, config file, network or editor error. `links` and
+`backlinks` also exit 1 when a ref that they list is broken.
+
+### Paths from stdin
+
+A path argument `-` reads the paths from stdin, one on each line, or separated by NUL as with
+`git diff -z`. Thus git, `find` or another tool can choose the files. From stdin, a path that does
+not exist is not an error: `links` and `check` skip it, and `backlinks` still finds the refs that
+point to it. Give the paths relative to the current directory, as `git diff` does when you run it
+at the repo root.
+
+For example, to see what a branch changed at the two ends of its refs:
+
+```sh
+changed() { git diff -z --name-only --no-renames "$(git merge-base origin/main HEAD)"; git ls-files -z --others --exclude-standard; }
+changed | interref links -                        # refs in the changed files
+changed | interref backlinks -                    # refs to the changed files, also to deleted ones
+changed | interref backlinks - | grep '  sync:'   # only the sync: refs
+{ changed | interref links -; changed | interref backlinks -; } | sort | uniq -d   # both ends changed
+```
+
+`links` and `backlinks` print a ref on the same line, so `sort`, `uniq` and `comm` can compare their
+output. `--no-renames` keeps the old path of a moved file, so the refs to the old path show.
 
 `interref graph --format drawio > refs.drawio` writes a file that draw.io (or the Draw.io Integration
 extension in VS Code) opens. The tool places the nodes itself, from left to right: a file is one
@@ -177,11 +199,29 @@ A red dashed arrow is a broken ref, and a number on an arrow counts the refs it 
 - run: npx --yes @normal-computing/interref check
 ```
 
+If the repo already has broken refs, a pull request can check only the refs in or to the files that
+it changes. `fetch-depth: 0` gets the history that `git merge-base` needs:
+
+```yaml
+- uses: actions/checkout@v5
+  with:
+    fetch-depth: 0
+- uses: actions/setup-node@v5
+  with:
+    node-version: 22
+- run: npm install --global @normal-computing/interref
+- run: |
+    base=$(git merge-base origin/${{ github.base_ref }} HEAD)
+    git diff -z --name-only --no-renames "$base" | interref check -
+    git diff -z --name-only --no-renames "$base" | interref backlinks -
+```
+
 ### Coding agents
 
 `interref --guide` prints a guide for coding agents: how to write refs, where to put them, what to
-run after a file moves, and how to check a change for inconsistency between linked files. The guide is an [Agent Skill](https://agentskills.io) file. An agent
-can read it once, or you can save it as a skill:
+run after a file moves, and how to check a change for inconsistency between linked files. The guide
+is an [Agent Skill](https://agentskills.io) file. An agent can read it once, or you can save it as a
+skill:
 
 ```sh
 interref --guide > .claude/skills/iref/SKILL.md   # Claude Code

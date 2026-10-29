@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** interref: outgoing refs, backlinks, broken refs and the link graph of a git repo. */
 
+import { readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import {
@@ -44,9 +45,9 @@ const NAME = basename(process.argv[1] ?? "") === "iref" ? "iref" : "interref";
 const USAGE = `Usage: ${NAME} <command> [options]
 
 Commands:
-  links <file> [--to <file>]   Refs written in a file, optionally only those that reach <file>
-  backlinks <file>             Refs in the repo that point at a file or directory
-  check [<path>...]            Report broken refs in the repo or under the paths; exit 1 if any
+  links <file>... [--to <file>]  Refs written in the files, optionally only those that reach <file>
+  backlinks <path>...          Refs in the repo that point at the files or directories
+  check [<path>...]            Report broken refs in the repo or under the paths
   graph [<file>]               Export the link graph, whole repo or around one file (> x.drawio)
   install-extension            Install or update the VS Code extension from the newest GitHub release
 
@@ -63,7 +64,10 @@ Options:
   -h, --help                   Show this help
   -v, --version                Show the version
 
+A path argument of - reads the paths from stdin, one on each line, or NUL-separated (git diff -z).
+From stdin, a path that does not exist is not an error: backlinks still finds the refs to it.
 Paths in output are relative to the repo root. Exit codes: 0 clean, 1 broken refs, 2 usage or other error.
+links and backlinks also exit 1 when a ref that they list is broken.
 Once a day, the CLI asks npm for a newer stable version. INTERREF_NO_UPDATE_CHECK=1 turns this off.
 A ref starts with a protocol name from the config file: iref: or sync: by default.
 Only heading fragments (#some-heading) are supported for now. iref is a short name for interref.
@@ -126,22 +130,48 @@ function repoPath(repo: Repo, argument: string): string {
 
 function onePath(positionals: readonly string[], command: string): string {
   const [path, ...rest] = positionals;
-  if (path === undefined || rest.length > 0) throw new UsageError(`${command} takes exactly one file`);
+  if (path === undefined || rest.length > 0 || path === "-") throw new UsageError(`${command} takes exactly one file`);
   return path;
 }
 
-function printRecord(repo: Repo, record: RefRecord, context: ContextOptions, arrow: boolean): void {
+/**
+ * The repo paths of the arguments, or of the paths on stdin for `-`. A path from stdin may name
+ * nothing, as a deleted file in a diff does; an argument must exist, so that a typing error shows.
+ */
+function repoPaths(repo: Repo, positionals: readonly string[]): string[] {
+  if (!positionals.includes("-")) return positionals.map((argument) => repoPath(repo, argument));
+  if (positionals.length > 1) throw new UsageError("- must be the only path argument");
+  const input = readFileSync(0, "utf8");
+  const lines = input.includes("\0") ? input.split("\0") : input.split(/\r?\n/u);
+  return lines
+    .filter((line) => line !== "")
+    .map((line) => {
+      const path = repo.relative(resolve(line));
+      if (path === undefined) throw new UsageError(`${line} is outside the repo at ${repo.root}`);
+      return path;
+    });
+}
+
+const hasError = (records: readonly RefRecord[]): boolean => records.some((record) => record.status === "error");
+
+function printRecord(repo: Repo, record: RefRecord, context: ContextOptions): void {
   let line = `${location(record)}  ${record.raw}`;
-  if (arrow && record.target !== undefined) line += `  -> ${describeTarget(record)}`;
+  if (record.target !== undefined) line += `  -> ${describeTarget(record)}`;
   if (record.rule !== undefined) line += `  ${record.status} ${record.rule}: ${record.message ?? ""}`;
   console.log(line);
   for (const extra of contextBlock(repo, record, context)) console.log(extra);
 }
 
 /** The files reachable from `root` as a tree; each file is expanded once. */
-function tree(graph: RefGraph, root: string, depth: number, reverse: boolean): { lines: string[]; json: JsonValue[] } {
+function tree(
+  graph: RefGraph,
+  root: string,
+  depth: number,
+  reverse: boolean,
+): { lines: string[]; json: JsonValue[]; broken: RefRecord[] } {
   const expanded = new Set<string>();
   const json: JsonValue[] = [];
+  const brokenRefs: RefRecord[] = [];
   const lines: string[] = [root];
   const walk = (path: string, prefix: string, level: number, ancestors: readonly string[]): void => {
     expanded.add(path);
@@ -155,6 +185,7 @@ function tree(graph: RefGraph, root: string, depth: number, reverse: boolean): {
       const childPrefix = prefix + (last ? "    " : "│   ");
       if (entry.kind === "broken") {
         lines.push(`${branch}✗ ${entry.r.raw} (${entry.r.rule ?? "broken"})`);
+        brokenRefs.push(entry.r);
         json.push({ depth: level, from: path, to: null, ...recordJson(entry.r) });
         return;
       }
@@ -170,27 +201,33 @@ function tree(graph: RefGraph, root: string, depth: number, reverse: boolean): {
     });
   };
   walk(root, "", 1, []);
-  return { lines, json };
+  return { lines, json, broken: brokenRefs };
 }
 
-function printTree(graph: RefGraph, root: string, depth: number, reverse: boolean, outputFormat: string): void {
-  const { lines, json } = tree(graph, root, depth, reverse);
+/** Prints the tree and returns the exit code: 1 when a broken ref is in it. */
+function printTree(graph: RefGraph, root: string, depth: number, reverse: boolean, outputFormat: string): number {
+  const { lines, json, broken } = tree(graph, root, depth, reverse);
   if (outputFormat === "text") for (const line of lines) console.log(line);
   else printJson(json, outputFormat === "json" ? "json" : "ndjson");
+  return hasError(broken) ? 1 : 0;
+}
+
+/** Prints the refs, the same way for links and backlinks, and returns 1 when one is broken. */
+function printRecords(repo: Repo, records: readonly RefRecord[], values: Values, outputFormat: string): number {
+  if (outputFormat !== "text") printJson(records.map(recordJson), outputFormat === "json" ? "json" : "ndjson");
+  else for (const record of records) printRecord(repo, record, contextOptions(values));
+  return hasError(records) ? 1 : 0;
 }
 
 function commandLinks(repo: Repo, values: Values, positionals: readonly string[]): number {
   const outputFormat = format(values.format, ["text", "json", "ndjson"] as const);
-  const file = repoPath(repo, onePath(positionals, "links"));
   const to = values.to === undefined ? undefined : repoPath(repo, values.to);
   const depth = count(values.depth, "--depth", Number.POSITIVE_INFINITY);
 
   if (values.recursive === true) {
+    const file = repoPath(repo, onePath(positionals, "links -r"));
     const graph = new RefGraph(scanRepo(repo).records);
-    if (to === undefined) {
-      printTree(graph, file, depth, false, outputFormat);
-      return 0;
-    }
+    if (to === undefined) return printTree(graph, file, depth, false, outputFormat);
     const paths = graph.pathsBetween(file, to, depth);
     if (outputFormat !== "text") {
       printJson(paths.map((path) => ({ path, hops: path.length - 1 })), outputFormat);
@@ -205,34 +242,36 @@ function commandLinks(repo: Repo, values: Values, positionals: readonly string[]
     return 0;
   }
 
-  const text = repo.text(file);
-  const { records } = scanRepo(repo, (path) => path === file);
+  if (positionals.length === 0) throw new UsageError("links needs a file");
+  const files = new Set(repoPaths(repo, positionals));
+  for (const file of files) {
+    if (repo.kind(file) === "directory") throw new UsageError(`${file} is a directory; links needs a file`);
+  }
+  const { records } = scanRepo(repo, (path) => files.has(path));
   const shown = to === undefined ? records : records.filter((record) => record.target?.path === to);
-  if (text === undefined && repo.kind(file) === "directory") throw new UsageError(`${file} is a directory; links needs a file`);
-  if (outputFormat !== "text") printJson(shown.map(recordJson), outputFormat);
-  else for (const record of shown) printRecord(repo, record, contextOptions(values), true);
-  return 0;
+  return printRecords(repo, shown, values, outputFormat);
 }
 
 function commandBacklinks(repo: Repo, values: Values, positionals: readonly string[]): number {
   const outputFormat = format(values.format, ["text", "json", "ndjson"] as const);
-  const file = repoPath(repo, onePath(positionals, "backlinks"));
-  const graph = new RefGraph(scanRepo(repo).records);
+  const { records } = scanRepo(repo);
   if (values.recursive === true) {
-    printTree(graph, file, count(values.depth, "--depth", Number.POSITIVE_INFINITY), true, outputFormat);
-    return 0;
+    const file = repoPath(repo, onePath(positionals, "backlinks -r"));
+    return printTree(new RefGraph(records), file, count(values.depth, "--depth", Number.POSITIVE_INFINITY), true, outputFormat);
   }
-  const records = graph.incoming(file);
-  if (outputFormat !== "text") printJson(records.map(recordJson), outputFormat);
-  else for (const record of records) printRecord(repo, record, contextOptions(values), false);
-  return 0;
+  if (positionals.length === 0) throw new UsageError("backlinks needs a path");
+  // By the path that each ref names, so that a ref to a deleted file is found too.
+  const targets = new Set(repoPaths(repo, positionals));
+  const shown = records.filter((record) => record.targetPath !== undefined && targets.has(record.targetPath));
+  return printRecords(repo, shown, values, outputFormat);
 }
 
 function commandCheck(repo: Repo, values: Values, positionals: readonly string[]): number {
   const outputFormat = format(values.format, ["text", "json", "ndjson", "sarif"] as const);
-  const roots = positionals.map((argument) => repoPath(repo, argument));
+  // With -, an empty list checks nothing; with no arguments, the whole repo.
+  const roots = positionals.length === 0 ? undefined : repoPaths(repo, positionals);
   const include = (path: string): boolean =>
-    roots.length === 0 || roots.some((root) => root === "" || path === root || path.startsWith(`${root}/`));
+    roots === undefined || roots.some((root) => root === "" || path === root || path.startsWith(`${root}/`));
   const scan = scanRepo(repo, include);
   const problems = scan.records.filter((record) => record.status !== "ok");
   const errors = problems.filter((record) => record.status === "error").length;

@@ -138,7 +138,7 @@ The package name has a scope because npm refuses the unscoped names `interref`, 
 ## Not done yet
 
 - Line and anchor fragments, and the `duplicate-anchor`, `line-ref` and `stale-line` rules.
-- `interref mv`, `interref check --changed`, `--include`/`--exclude` flags, and the blob-hash cache.
+- `interref mv`, `--include`/`--exclude` flags, and the blob-hash cache.
 - `interref lsp`. Because the extension uses `core` directly, it does not need a language server.
   Add one only if another editor needs one.
 - Backlinks panel and rename safety in the extension.

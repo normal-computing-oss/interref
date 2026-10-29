@@ -98,6 +98,52 @@ describe("interref links and backlinks", () => {
   });
 });
 
+describe("many paths and paths from stdin", () => {
+  const piped = (input: string, ...args: string[]): { code: number | null; stdout: string } => {
+    const result = spawnSync(process.execPath, [CLI, ...args], { cwd: root, encoding: "utf8", input });
+    return { code: result.status, stdout: result.stdout };
+  };
+  const sources = (stdout: string): string[] => stdout.trim().split("\n").map((line) => line.split("  ")[0] ?? "");
+
+  it("lists the refs of many files, and exits 1 when one of them is broken", () => {
+    const { code, stdout } = refs("links", "src/session.ts", "docs/tokens.md");
+    assert.equal(code, 0);
+    assert.deepEqual(sources(stdout), ["docs/tokens.md:3:21", "src/session.ts:1:19"]);
+    assert.equal(refs("links", "src/pool.go").code, 1);
+  });
+
+  it("reads paths from stdin, one on each line or NUL-separated", () => {
+    assert.deepEqual(sources(piped("docs/auth.md\ndocs/tokens.md\n", "backlinks", "-").stdout), [
+      "docs/auth.md:5:10",
+      "src/pool.go:1:25",
+      "src/session.ts:1:19",
+    ]);
+    assert.deepEqual(sources(piped("src/session.ts\0docs/tokens.md\0", "links", "-").stdout), [
+      "docs/tokens.md:3:21",
+      "src/session.ts:1:19",
+    ]);
+  });
+
+  it("finds refs to a path from stdin that does not exist, and skips it in links and check", () => {
+    const { code, stdout } = piped("src/config.go\n", "backlinks", "-");
+    assert.equal(code, 1);
+    assert.match(stdout, /^src\/pool\.go:1:4 {2}iref:\.\/config\.go {2}error missing-file/u);
+    assert.equal(piped("src/config.go\n", "links", "-").code, 0);
+    assert.match(piped("src/config.go\n", "check", "-").stdout, /0 broken refs \(0 refs in 0 files\)/u);
+    assert.equal(refs("backlinks", "src/config.go").code, 2);
+  });
+
+  it("prints the same line for a ref in links and in backlinks", () => {
+    const line = (stdout: string): string | undefined => stdout.split("\n").find((l) => l.startsWith("src/session.ts:"));
+    assert.equal(line(refs("links", "src/session.ts").stdout), line(refs("backlinks", "docs/auth.md").stdout));
+  });
+
+  it("accepts - only as the one path", () => {
+    assert.equal(piped("", "links", "-", "src/session.ts").code, 2);
+    assert.equal(piped("", "links", "-r", "-").code, 2);
+  });
+});
+
 describe("usage errors", () => {
   it("exit 2", () => {
     assert.equal(refs().code, 2);

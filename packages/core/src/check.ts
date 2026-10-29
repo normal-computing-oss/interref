@@ -32,6 +32,8 @@ export interface RefRecord {
   readonly end: number;
   /** Set when the path resolved to something that exists, even if the ref has a problem. */
   readonly target?: ResolvedTarget;
+  /** The repo path that the ref names, set when the path is valid, also when nothing is there. */
+  readonly targetPath?: string;
   readonly status: Status;
   readonly rule?: RuleId;
   readonly message?: string;
@@ -83,7 +85,12 @@ export function similarPaths(repo: Repo, path: string): string[] {
 /** Checks one ref written in `source` (a repo-relative path), with the rule settings of the config. */
 export function checkRef(repo: Repo, source: string, match: RefMatch, lines: LineIndex): RefRecord {
   const position = lines.position(match.start);
-  const base = { source: { path: source, ...position }, raw: match.raw, start: match.start, end: match.end };
+  let base: Omit<RefRecord, "status" | "suggestions"> = {
+    source: { path: source, ...position },
+    raw: match.raw,
+    start: match.start,
+    end: match.end,
+  };
   const problem = (rule: RuleId, message: string, suggestions: readonly string[] = [], target?: ResolvedTarget): RefRecord => {
     const setting = repo.config.rules[rule] ?? RULE_SEVERITY[rule];
     const located = { ...base, ...(target === undefined ? {} : { target }) };
@@ -98,6 +105,7 @@ export function checkRef(repo: Repo, source: string, match: RefMatch, lines: Lin
     return problem(resolved.problem.rule, resolved.problem.message, suggestions);
   }
   const { path, style, trailingSlash } = resolved.value;
+  base = { ...base, targetPath: path };
   const rewrite = (to: string, kind: EntryKind, slug = match.fragment): string =>
     formatRef(source, to, { style, directory: kind === "directory" && trailingSlash, slug, protocol: match.protocol });
 

@@ -143,6 +143,7 @@ describe("a file moved without git", () => {
     const [record] = scanRepo(await Repo.open(fixture.root)).records;
     assert.equal(record?.rule, "missing-file");
     assert.deepEqual(record.suggestions, ["sync:/docs/v2/spec.md#limits"]);
+    assert.equal(record.targetPath, "docs/spec.md");
   });
 });
 
