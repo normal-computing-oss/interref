@@ -174,9 +174,9 @@ describe("interref --version and install-extension", () => {
     const result = spawnSync(process.execPath, [CLI, ...args], { cwd: root, encoding: "utf8", env });
     return { code: result.status, stdout: result.stdout, stderr: result.stderr };
   };
+  const manifest = JSON.parse(readFileSync(join(dirname(CLI), "..", "package.json"), "utf8")) as { version: string };
 
   it("prints the version from package.json", () => {
-    const manifest = JSON.parse(readFileSync(join(dirname(CLI), "..", "package.json"), "utf8")) as { version: string };
     for (const flag of ["--version", "-v"]) {
       const { code, stdout, stderr } = run(flag);
       assert.equal(code, 0);
@@ -185,12 +185,14 @@ describe("interref --version and install-extension", () => {
     }
   });
 
-  it("prints the agent guide from skills/iref/SKILL.md, also outside a repo", () => {
+  it("prints the agent guide from skills/iref/SKILL.md with the version in its frontmatter, also outside a repo", () => {
     const skill = readFileSync(join(dirname(CLI), "..", "..", "..", "skills", "iref", "SKILL.md"), "utf8");
     const result = spawnSync(process.execPath, [CLI, "--guide"], { cwd: tmpdir(), encoding: "utf8", env: { ...process.env, INTERREF_NO_UPDATE_CHECK: "1" } });
     assert.equal(result.status, 0);
-    assert.equal(result.stdout, skill);
     assert.match(skill, /^---\nname: iref\n/u);
+    const end = skill.indexOf("\n---\n", 4);
+    const metadata = `\nmetadata:\n  interref-version: "${manifest.version}"`;
+    assert.equal(result.stdout, `${skill.slice(0, end)}${metadata}${skill.slice(end)}`);
   });
 
   it("exits 2 when the editor command does not exist", () => {

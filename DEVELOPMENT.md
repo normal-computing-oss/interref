@@ -65,7 +65,8 @@ the lexer, on repos that use the languages you changed.
 `pnpm build` writes the CLI and `@interref/core` into one file, `packages/cli/dist/interref.mjs`.
 That file is the whole npm package, so it has no dependencies at run time. esbuild also writes the
 version from `package.json` into the bundle, for `--version` and the update check, and the agent
-guide `skills/iref/SKILL.md`, for `--guide`. `prepack` copies the repo README and LICENSE into
+guide `skills/iref/SKILL.md`, for `--guide`. It adds the version to the guide's frontmatter as
+`metadata.interref-version`, so do not write a `metadata` key in `SKILL.md`. `prepack` copies the repo README and LICENSE into
 `packages/cli`, so the npm page shows the README.
 `scripts/npm-readme.mjs` changes the relative links in the copy to GitHub URLs.
 
@@ -122,6 +123,12 @@ pnpm release 0.2.0             # the real release
 If a step before the npm publish fails, the script undoes the commit and the tag, so you can fix
 the problem and run it again. If a step after the npm publish fails, the script shows the commands
 that are still to do. Do not publish the same version again.
+
+Users update their saved copy of the agent guide only after a major or minor version (see Coding
+agents in the README). Thus a patch version must not change the meaning of `skills/iref/SKILL.md`:
+only typo, wording and formatting fixes. If a change to the guide adds, removes or changes a
+procedure, a rule, a command or an option, release a minor version or higher. To see the changes
+since the last release, run `git diff v<last-version> -- skills/iref/SKILL.md`.
 
 A version with a `-` goes to the npm dist-tag with the same word as its prerelease part
 (`0.3.0-beta.1` goes to `beta`), and its GitHub release is a prerelease. Other versions go to

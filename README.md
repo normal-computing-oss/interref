@@ -228,6 +228,14 @@ interref --guide > .claude/skills/iref/SKILL.md   # Claude Code
 interref --guide > .agents/skills/iref/SKILL.md   # other agents that read .agents/skills
 ```
 
+The frontmatter of the printed guide has the CLI version in `metadata.interref-version`. A patch
+version (for example 0.3.1 to 0.3.2) does not change the meaning of the guide. It can only fix
+typos, wording or formatting. A major or minor version can change the procedures and the rules in
+the guide. After such an update, tell your agent to read `interref --guide` again, compare it with
+the repo's skill and propose the changes. The guide tells the agent to do this when it sees that
+the installed CLI is newer than the skill. Do not simply overwrite the skill: the repo's skill can
+have changes for the repo.
+
 If the repo has its own iref skill and it is different from the guide, the repo's skill wins. The
 source of the guide is [skills/iref/SKILL.md](skills/iref/SKILL.md).
 

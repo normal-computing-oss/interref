@@ -12,7 +12,12 @@ that a move or a heading change broke. `iref` is the short name of the
 `interref` CLI. Install it with `npm install --global @normal-computing/interref`
 (Node 22 or later), or run `npx @normal-computing/interref <command>`.
 
-`iref --guide` prints a sample skill file and may be different in different CLI versions.
+`iref --guide` prints the guide for the installed CLI version. In its
+frontmatter, `metadata.interref-version` is that version. If the installed
+CLI (`iref --version`) has a newer major or minor version than this file, or
+a command or an option here does not agree with the CLI, read
+`iref --guide`. Compare it with this file and propose the changes to the user.
+Do not overwrite this file: it can have changes for the repo.
 
 ## Write a ref
 
@@ -21,10 +26,11 @@ iref:/path/from/repo/root
 iref:./relative/to/this/file
 iref:../also/relative
 iref:/some/doc.md#heading-slug
-iref:#heading-in-this-file   (in a Markdown file only)
+iref:#heading-in-this-file
 iref:/some/directory/
 ```
 
+- Use `iref:#heading` only in a Markdown file. Other files have no headings.
 - Start the path with `/`, `./` or `../`. A bare path (`iref:config.go`) is
   an error.
 - Prefer `/` paths from the repo root. They stay correct when the file that
@@ -126,7 +132,7 @@ lines around each ref), `-T N` (show the first N lines of the target),
 
 1. Read the config file at the repo root for `protocols` and `exclude`. Its
    name is `interref.toml`, `.interref.toml`, `interref.json` or
-   `.interref.json`. Two config files is an error.
+   `.interref.json`. It is an error to have two config files.
 2. For each link, find the downstream file and the most specific target
    heading.
 3. Write the ref in a comment in the downstream file. Match the comment style
@@ -144,8 +150,15 @@ lines around each ref), `-T N` (show the first N lines of the target),
 2. Make the change.
 3. Run `iref check` with no paths. `iref check <path>` checks only the refs
    in that path, not the refs that point to it.
-4. Use the suggested fix in each error, or update the refs that you recorded
-   in step 1.
+4. Update each broken ref. An error shows a fix (`(fix: ...)`) only when
+   iref can find the new target:
+   - A moved file gets a fix if it keeps its name, or if its new name in the
+     same directory is near the old name. `git mv` does not change this.
+   - A renamed heading gets a fix if the new slug is near the old slug or
+     starts with it.
+
+   If there is no fix, use the refs that you recorded in step 1 and the new
+   path or heading.
 
 ### Change a file that has sync refs
 
@@ -185,8 +198,10 @@ changed | iref backlinks -   # refs to the changed files: the target changed
    that means "change together" to the pattern, for example
    `grep -E '  (sync|spec):'`.
 3. For each link, read the two sides. If the ref has a heading, only that
-   section of the target counts. A change in a different section does not
-   affect the link.
+   section of the target counts. The section includes its subsections, up to
+   the next heading of the same or a higher level. A change in a different
+   section does not affect the link. If the diff of a side only adds, removes
+   or changes refs, that side did not change.
    - If one side changed, read its diff
      (`git diff "$(git merge-base origin/main HEAD)" -- <file>`), or the whole
      file if it is new. Then read the other side. Add `-T 40` to the commands
