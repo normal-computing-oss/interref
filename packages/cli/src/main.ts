@@ -35,6 +35,9 @@ import {
   VERSION,
 } from "./update.js";
 
+/** esbuild replaces this with skills/iref/SKILL.md. tsrs output (the unit tests) has no value. */
+declare const INTERREF_GUIDE: string | undefined;
+
 /** The name that the user typed: `iref` is a short name for `interref`. */
 const NAME = basename(process.argv[1] ?? "") === "iref" ? "iref" : "interref";
 
@@ -56,13 +59,18 @@ Options:
       --editor CMD             install-extension: the editor's command (default code; also cursor, windsurf, codium)
       --prerelease             install-extension: also use prereleases
       --check                  install-extension: only tell if an update is available
+      --guide                  Print the guide for coding agents: how to write, place and check refs
   -h, --help                   Show this help
   -v, --version                Show the version
 
 Paths in output are relative to the repo root. Exit codes: 0 clean, 1 broken refs, 2 usage or other error.
 Once a day, the CLI asks npm for a newer stable version. INTERREF_NO_UPDATE_CHECK=1 turns this off.
 A ref starts with a protocol name from the config file: iref: or sync: by default.
-Only heading fragments (#some-heading) are supported for now. iref is a short name for interref.`;
+Only heading fragments (#some-heading) are supported for now. iref is a short name for interref.
+
+The guide is an Agent Skill file. Read it for best practices, or save it as a skill, for example
+  ${NAME} --guide > .claude/skills/iref/SKILL.md or ${NAME} --guide > .agents/skills/iref/SKILL.md
+If the repo has its own iref skill and it is different, the repo's skill wins.`;
 
 class UsageError extends Error {}
 
@@ -78,6 +86,7 @@ const OPTIONS = {
   editor: { type: "string" },
   prerelease: { type: "boolean" },
   check: { type: "boolean" },
+  guide: { type: "boolean" },
   help: { type: "boolean", short: "h" },
   version: { type: "boolean", short: "v" },
 } as const;
@@ -304,6 +313,10 @@ async function main(argv: readonly string[]): Promise<number> {
   const [command, ...rest] = positionals;
   if (values.version === true) {
     console.log(VERSION);
+    return 0;
+  }
+  if (values.guide === true) {
+    process.stdout.write(typeof INTERREF_GUIDE === "string" ? INTERREF_GUIDE : "");
     return 0;
   }
   if (values.help === true || command === undefined) {

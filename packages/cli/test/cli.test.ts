@@ -139,6 +139,14 @@ describe("interref --version and install-extension", () => {
     }
   });
 
+  it("prints the agent guide from skills/iref/SKILL.md, also outside a repo", () => {
+    const skill = readFileSync(join(dirname(CLI), "..", "..", "..", "skills", "iref", "SKILL.md"), "utf8");
+    const result = spawnSync(process.execPath, [CLI, "--guide"], { cwd: tmpdir(), encoding: "utf8", env: { ...process.env, INTERREF_NO_UPDATE_CHECK: "1" } });
+    assert.equal(result.status, 0);
+    assert.equal(result.stdout, skill);
+    assert.match(skill, /^---\nname: iref\n/u);
+  });
+
   it("exits 2 when the editor command does not exist", () => {
     const { code, stderr } = run("install-extension", "--editor", "no-such-editor-command");
     assert.equal(code, 2);

@@ -135,15 +135,17 @@ export function checkRef(repo: Repo, source: string, match: RefMatch, lines: Lin
 
   let target: ResolvedTarget = { path, kind };
   if (match.fragment !== undefined) {
+    // A same-file ref without its fragment is empty, and an empty ref is not a ref, so it is no fix.
+    const withoutFragment = style === "self" ? [] : [rewrite(path, kind, "")];
     const fragment = parseFragment(match.fragment);
-    if (!fragment.ok) return problem(fragment.problem.rule, fragment.problem.message, [rewrite(path, kind, "")], target);
+    if (!fragment.ok) return problem(fragment.problem.rule, fragment.problem.message, withoutFragment, target);
     target = { ...target, fragment: fragment.value };
     const { slug } = fragment.value;
     if (kind === "directory") {
-      return problem("missing-anchor", "a directory has no headings", [rewrite(path, kind, "")], target);
+      return problem("missing-anchor", "a directory has no headings", withoutFragment, target);
     }
     if (!isMarkdownPath(path)) {
-      return problem("missing-anchor", "only Markdown files have heading fragments", [rewrite(path, kind, "")], target);
+      return problem("missing-anchor", "only Markdown files have heading fragments", withoutFragment, target);
     }
     const headings = repo.headings(path);
     const heading = headings.find((candidate) => candidate.slug === slug);

@@ -154,6 +154,7 @@ src/auth/session.ts:3:5  error  iref:/docs/auth.md#tokn  no heading #tokn in doc
 | `-C N`, `-A N`, `-B N`    | Show N lines around each ref, as `grep` does.                           |
 | `-T N`, `--show-target N` | Show N lines of the target, from the heading or from the top.           |
 | `--format F`              | `text`, `json`, `ndjson`; `check` also has `sarif`.                     |
+| `--guide`                 | Print the guide for coding agents. See [Coding agents](#coding-agents). |
 | `-v`, `--version`         | Show the version.                                                       |
 
 Exit codes: 0 clean, 1 broken refs, 2 usage, git, config file, network or editor error.
@@ -175,6 +176,20 @@ A red dashed arrow is a broken ref, and a number on an arrow counts the refs it 
     node-version: 22
 - run: npx --yes @normal-computing/interref check
 ```
+
+### Coding agents
+
+`interref --guide` prints a guide for coding agents: how to write refs, where to put them, and
+what to run after a file moves. The guide is an [Agent Skill](https://agentskills.io) file. An agent
+can read it once, or you can save it as a skill:
+
+```sh
+interref --guide > .claude/skills/iref/SKILL.md   # Claude Code
+interref --guide > .agents/skills/iref/SKILL.md   # other agents that read .agents/skills
+```
+
+If the repo has its own iref skill and it is different from the guide, the repo's skill wins. The
+source of the guide is [skills/iref/SKILL.md](skills/iref/SKILL.md).
 
 ### Rules
 

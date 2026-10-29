@@ -84,6 +84,9 @@ describe("checkText", () => {
     assert.deepEqual(only("docs/tokens.md", "iref:./auth.md#tok").suggestions, ["iref:./auth.md#token-lifetime"]);
     assert.equal(only("docs/a.md", "iref:/src/db/pool.go#x").rule, "missing-anchor");
     assert.equal(only("docs/a.md", "iref:/src/#x").rule, "missing-anchor");
+    const self = only("src/db/pool.go", "iref:#x");
+    assert.equal(self.rule, "missing-anchor");
+    assert.deepEqual(self.suggestions, []);
   });
 
   it("rejects line and anchor fragments for now", () => {
@@ -91,6 +94,7 @@ describe("checkText", () => {
     assert.equal(line.rule, "unsupported-fragment");
     assert.deepEqual(line.suggestions, ["iref:/src/db/pool.go"]);
     assert.equal(only("docs/a.md", "iref:/src/db/pool.go#^name").rule, "unsupported-fragment");
+    assert.deepEqual(only("docs/a.md", "iref:#L3").suggestions, []);
   });
 
   it("warns about untracked and ignored targets", () => {
