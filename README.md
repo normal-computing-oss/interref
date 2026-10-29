@@ -179,8 +179,8 @@ A red dashed arrow is a broken ref, and a number on an arrow counts the refs it 
 
 ### Coding agents
 
-`interref --guide` prints a guide for coding agents: how to write refs, where to put them, and
-what to run after a file moves. The guide is an [Agent Skill](https://agentskills.io) file. An agent
+`interref --guide` prints a guide for coding agents: how to write refs, where to put them, what to
+run after a file moves, and how to check a change for inconsistency between linked files. The guide is an [Agent Skill](https://agentskills.io) file. An agent
 can read it once, or you can save it as a skill:
 
 ```sh

@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { mkdirSync, renameSync } from "node:fs";
+import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { checkText, scanRepo } from "../src/check.js";
 import { RefGraph } from "../src/graph.js";
@@ -124,6 +126,23 @@ describe("checkText", () => {
     );
     assert.deepEqual(checkText(repo, "docs/a.md", "Text iref:/no/such/file and `<!-- iref:/no/such/file -->`"), []);
     assert.deepEqual(checkText(repo, "notes.txt", "iref:/no/such/file"), []);
+  });
+});
+
+describe("a file moved without git", () => {
+  let fixture: ReturnType<typeof makeRepo>;
+
+  before(() => {
+    fixture = makeRepo({ "docs/spec.md": "# Spec\n\n## Limits\n", "src/a.py": "# sync:/docs/spec.md#limits\n" });
+    mkdirSync(join(fixture.root, "docs", "v2"));
+    renameSync(join(fixture.root, "docs", "spec.md"), join(fixture.root, "docs", "v2", "spec.md"));
+  });
+  after(() => fixture.dispose());
+
+  it("is missing at the old path and suggested at the new path", async () => {
+    const [record] = scanRepo(await Repo.open(fixture.root)).records;
+    assert.equal(record?.rule, "missing-file");
+    assert.deepEqual(record.suggestions, ["sync:/docs/v2/spec.md#limits"]);
   });
 });
 

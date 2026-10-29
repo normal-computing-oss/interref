@@ -112,11 +112,16 @@ export class Repo {
    */
   static async open(path: string, readText: TextReader = readTextFromDisk): Promise<Repo> {
     const root = await findRepoRoot(path);
-    const [tracked, untracked] = await Promise.all([
+    const [tracked, deleted, untracked] = await Promise.all([
       git(root, ["ls-files", "-z", "--cached"]),
+      git(root, ["ls-files", "-z", "--deleted"]),
       git(root, ["ls-files", "-z", "--others", "--exclude-standard"]),
     ]);
-    return new Repo(root, splitNul(tracked), splitNul(untracked), readText, loadConfig(root, readText));
+    // A file moved or deleted without git stays in the index until it is staged, but it is gone.
+    // --deleted skips sparse-checkout files, so they still resolve.
+    const gone = new Set(splitNul(deleted));
+    const present = splitNul(tracked).filter((path) => !gone.has(path));
+    return new Repo(root, present, splitNul(untracked), readText, loadConfig(root, readText));
   }
 
   /** Whether the config excludes `path` from scanning. */

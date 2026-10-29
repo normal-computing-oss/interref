@@ -1,6 +1,6 @@
 ---
 name: iref
-description: Add, edit and check interref links (iref:, sync:) between files of a git repo. Use when you write a comment that points to another file, spec section or doc heading; when two files must stay in sync (for example a spec and its model); when you move, rename or delete a file or heading in a repo that has refs; or when you run `iref check`, `iref links`, `iref backlinks` or `iref graph`.
+description: Add, edit and check interref links (iref:, sync:) between files of a git repo. Use when you write a comment that points to another file, spec section or doc heading; when two files must stay in sync (for example a spec and its model); when you move, rename or delete a file or heading in a repo that has refs; when you review a change or a pull request for inconsistency between linked files; or when you run `iref check`, `iref links`, `iref backlinks` or `iref graph`.
 ---
 
 # Use iref
@@ -130,10 +130,9 @@ lines around each ref), `-T N` (show the first N lines of the target),
    heading.
 3. Write the ref in a comment in the downstream file. Match the comment style
    of the file.
-4. If a target file is new, `git add` it. `iref check` gets the file list from
-   git.
-5. Run `iref check`. Fix all errors.
-6. Run the project's tests and docs build. A changed docstring or an HTML
+4. Run `iref check`. Fix all errors. A new target file gives a
+   `target-ignored` warning until you `git add` it.
+5. Run the project's tests and docs build. A changed docstring or an HTML
    comment can change output that a check reads.
 
 ### Move or rename a file or a heading
@@ -141,8 +140,7 @@ lines around each ref), `-T N` (show the first N lines of the target),
 1. Before the change, run `iref backlinks <path>` and record the refs. To
    move a file, also run `iref links <path>`: its `./` and `../` refs can
    break.
-2. Make the change. Use `git mv`, or `git add` the new path. If git does not
-   know the new path, `iref check` gives wrong errors and no fixes.
+2. Make the change.
 3. Run `iref check` with no paths. `iref check <path>` checks only the refs
    in that path, not the refs that point to it.
 4. Use the suggested fix in each error, or update the refs that you recorded
@@ -153,6 +151,58 @@ lines around each ref), `-T N` (show the first N lines of the target),
 1. Run `iref links <file>` and `iref backlinks <file>`.
 2. For each `sync:` link, read the other file and update it to agree with your
    change.
+
+### Check a set of changes for inconsistency
+
+Use this procedure to review a branch, a pull request or uncommitted changes.
+It finds broken refs, and `sync:` links where one side changed and the other
+side possibly did not.
+
+1. Get the list of changed files. Compare with the merge base, so that the list
+   has both the commits and the uncommitted changes. `--no-renames` keeps the
+   old path of a moved file in the list. `git diff` does not show new files
+   that git does not track, so `git ls-files --others` adds them.
+
+   ```sh
+   cd "$(git rev-parse --show-toplevel)"
+   base=$(git merge-base origin/main HEAD)   # or the base of the pull request
+   { git diff --name-only --no-renames "$base"; git ls-files --others --exclude-standard; } | sort -u
+   ```
+
+2. Run `iref check` with no paths. An error comes from the change if the file
+   that holds the ref, or its target, is in the list. Other errors were there
+   before the change. Report them separately, and do not fix them unless the
+   user asks.
+3. List the `sync:` links of the changed files. Each output line is one link:
+   the file and line of the ref, and then the ref. This takes about 0.3 seconds
+   for each changed file.
+
+   ```sh
+   { git diff --name-only --no-renames "$base"; git ls-files --others --exclude-standard; } |
+   while read -r f; do
+     [ -e "$f" ] || continue
+     iref links "$f"; iref backlinks "$f"
+   done | awk '$2 ~ /^sync:/ {print $1, $2}' | sort -u
+   ```
+
+   If the config file adds protocols, find out what they mean. Add each one
+   that means "change together" to the `awk` pattern, for example
+   `/^(sync|spec):/`.
+4. For each link, find the two sides: the file that holds the ref and the
+   target. If the ref has a heading, only that section of the target counts. A
+   change in a different section does not affect the link.
+   - If one side changed, read its diff (`git diff "$base" -- <file>`, or the
+     whole file if it is new). Then read the other side. `iref links <file> -T 40` shows the start of each
+     target section. Decide if the change makes the other side wrong.
+   - If both sides changed, read both diffs and make sure that they agree.
+   - A change that keeps the meaning needs no change on the other side. For
+     example: new wording, new formatting, or a typed value replaced by a
+     generated value.
+5. Do the same for an `iref:` link only when the change removes or changes
+   something that the other file depends on. For example, a test that checks a
+   rule that the change removed.
+6. Report each link in one of three groups: agrees, must change (tell what to
+   change), or not sure (tell why).
 
 ### Find the code for a spec section
 
